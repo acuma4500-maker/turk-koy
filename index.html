@@ -32,7 +32,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .pill{background:rgba(255,255,255,.1);border-radius:10px;padding:2px 6px}
 #speeds{display:flex;gap:3px}
 #speeds button,.tb{border:0;background:rgba(255,255,255,.12);color:var(--ink);border-radius:8px;
-  min-width:34px;height:30px;font-size:13px;font-weight:600;padding:0 5px}
+  min-width:30px;height:30px;font-size:12.5px;font-weight:600;padding:0 4px}
 #speeds button.on{background:var(--acc);color:#2f2116}
 .tb.on{background:#7b4fd6}
 #modeChip{margin-top:5px;font-size:12px;background:#7b4fd6;color:#fff;border-radius:8px;padding:4px 8px;display:flex;gap:8px;align-items:center}
@@ -88,6 +88,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .grid2 .btn{width:100%}
 .note{color:var(--muted);font-size:12px;margin:6px 0}
+.cv{padding:8px 0;border-bottom:1px solid var(--line)}
+.cvh{font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.ln{background:#f1e6d2;border-radius:12px 12px 12px 3px;padding:5px 9px;margin:3px 34px 3px 0;font-size:13.5px;line-height:1.35}
+.ln.r{background:#fde5bd;border-radius:12px 12px 3px 12px;margin:3px 0 3px 34px}
 
 /* Diyalog */
 #dlg{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px}
@@ -110,10 +114,10 @@ button{font:inherit;color:inherit;cursor:pointer}
   <div class="row">
     <div id="speeds">
       <button data-s="0">⏸</button><button data-s="1">1x</button><button data-s="2">2x</button>
-      <button data-s="5">5x</button><button data-s="10">10x</button>
+      <button data-s="5">5x</button><button data-s="10">10x</button><button data-s="30">30x</button>
     </div>
     <span class="sp"></span>
-    <button class="tb" id="bNews" title="Haberler">📰</button>
+    <button class="tb" id="bChat" title="Sohbetler">💬</button>
     <button class="tb" id="bStats" title="İstatistik">📊</button>
     <button class="tb" id="bGod" title="Tanrı modu">⚡</button>
     <button class="tb" id="bMenu" title="Menü">☰</button>
@@ -152,15 +156,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 const START_YEAR = 2025;
 const DAY_MIN = 1440;                       // bir gün = 1440 oyun dakikası
 const MONTH_DAYS = 30, YEAR_DAYS = 360;     // oyun takvimi: 30 günlük 12 ay
-const GAME_MIN_PER_SEC = MONTH_DAYS * DAY_MIN / 300; // 5 gerçek dk = 1 oyun ayı
+const GAME_MIN_PER_SEC = 1;                 // 1 gerçek dakika = 1 oyun saati (1 sn = 1 oyun dakikası)
 const MAX_POP = 300;
-const WALK = 3;                              // yürüme hızı (piksel / oyun dakikası)
-const SAVE_KEY = 'turkKoyuSim_v1';
+const WALK = 40;                             // yürüme hızı (piksel / oyun dakikası)
+const SAVE_KEY = 'turkKoyuSim_v2';
 
 const AYLAR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const MEVSIM = m => (m === 11 || m <= 1) ? 0 : (m <= 4 ? 1 : (m <= 7 ? 2 : 3)); // 0 kış,1 ilkbahar,2 yaz,3 sonbahar
 const MEVSIM_AD = ['Kış','İlkbahar','Yaz','Sonbahar'];
 const MEVSIM_IKON = ['❄️','🌸','☀️','🍂'];
+const HAVA = {gunesli: ['☀️', 'Güneşli'], bulutlu: ['☁️', 'Bulutlu'], yagmurlu: ['🌧️', 'Yağmurlu'], karli: ['🌨️', 'Karlı'], sisli: ['🌫️', 'Sisli']};
+const TAKIM = ['Galatasaray', 'Fenerbahçe', 'Beşiktaş', 'Trabzonspor'];
 
 const ERKEK = ['Mehmet','Ahmet','Mustafa','Ali','Hüseyin','Hasan','İbrahim','İsmail','Osman','Yusuf','Murat','Ömer',
   'Ramazan','Halil','Süleyman','Abdullah','Mahmut','Recep','Salih','Kemal','Fatih','Emre','Burak','Serkan','Hakan',
@@ -190,14 +196,16 @@ const MESLEK = {ciftci:'Çiftçi', hayvanci:'Hayvancı', isci:'Çalışan', sahi
 const ISLETME = {
   bakkal:   {ad:'Bakkal',    ikon:'🛒', cost:40000,  cat:'gida',   w:1,   margin:.26, staff:1, pop:0,   renk:'#4f8a3c'},
   kahvehane:{ad:'Kahvehane', ikon:'☕', cost:30000,  cat:'kahve',  w:1,   margin:.42, staff:1, pop:0,   renk:'#8b5a2b'},
-  berber:   {ad:'Berber',    ikon:'💈', cost:25000,  cat:'berber', w:1,   margin:.55, staff:1, pop:100, renk:'#3a6ea5'},
-  firin:    {ad:'Fırın',     ikon:'🥖', cost:50000,  cat:'firin',  w:1,   margin:.32, staff:1, pop:110, renk:'#c98a3a'},
-  market:   {ad:'Market',    ikon:'🏬', cost:120000, cat:'gida',   w:2.2, margin:.30, staff:2, pop:150, renk:'#b8392b'},
-  benzinlik:{ad:'Benzinlik', ikon:'⛽', cost:200000, cat:'yakit',  w:1,   margin:.18, staff:2, pop:160, renk:'#d35400'},
-  galeri:   {ad:'Araba Galerisi', ikon:'🚗', cost:300000, cat:'araba', w:1, margin:.14, staff:2, pop:200, renk:'#2c3e50'},
+  berber:   {ad:'Berber',    ikon:'💈', cost:25000,  cat:'berber', w:1,   margin:.55, staff:1, pop:15,  renk:'#3a6ea5'},
+  firin:    {ad:'Fırın',     ikon:'🥖', cost:50000,  cat:'firin',  w:1,   margin:.32, staff:1, pop:20,  renk:'#c98a3a'},
+  market:   {ad:'Market',    ikon:'🏬', cost:120000, cat:'gida',   w:2.2, margin:.30, staff:2, pop:40,  renk:'#b8392b'},
+  benzinlik:{ad:'Benzinlik', ikon:'⛽', cost:200000, cat:'yakit',  w:1,   margin:.18, staff:2, pop:50,  renk:'#d35400'},
+  galeri:   {ad:'Araba Galerisi', ikon:'🚗', cost:300000, cat:'araba', w:1, margin:.14, staff:2, pop:70, renk:'#2c3e50'},
 };
 /* Kişi başı aylık harcama (kategori pazar büyüklüğü) */
 const KATEGORI = {gida:350, kahve:150, firin:200, berber:90, yakit:300, araba:420};
+/* Köy dışından gelen müşteri (yoldan geçenler, komşu köyler) — küçük köyde dükkânlar bununla ayakta kalır */
+const BAZ = {gida:9000, kahve:5000, firin:3500, berber:2500, yakit:12000, araba:15000};
 
 /* Muhtarın yapabileceği kamu yatırımları */
 const PROJE = {
@@ -346,6 +354,8 @@ function buildMap() {
         yard: {x: bx + 14, y: by + 14, w: bw - 28, h: 40}};
     }
   }
+  // Köyün dışarıya açılan yolu (ilçe, komşu köyler)
+  M.cikis = {kind: 'cikis', x: VX[0] - 12, y: HY[2] - 12, w: 24, h: 24, door: {x: VX[0], y: HY[2]}};
 }
 
 /* ======================= 4) KİŞİLER VE İLİŞKİLER ======================= */
@@ -369,7 +379,7 @@ function newPerson(o) {
     f: null, m: null, sp: null, ch: [], h: -1, money: 0, debt: 0, rep: 50, hap: 65, hl: 92,
     edu: 0, school: null, zeka: ri(20, 95), tr: [], goal: 'aile', job: null, away: null, ret: 0,
     askerDone: false, rel: {}, rom: {}, kus: {}, mood: 0, cand: false, goalDone: false, worked: false,
-    dul: false, borcHaber: false,
+    dul: false, borcHaber: false, takim: pick(TAKIM), mem: [],
   }, o);
   S.people[p.id] = p; dirty();
   return p;
@@ -378,7 +388,7 @@ function dirty() { R.alive = null; R.hm = null; R.present = null; }
 
 /* Yaşayan köylüler (askerde/üniversitede olanlar dahil) */
 function alive() {
-  if (!R.alive) R.alive = Object.values(S.people).filter(isAlive);
+  if (!R.alive) R.alive = Object.values(S.people).filter(p => isAlive(p) && p.away !== 'komsu');
   return R.alive;
 }
 function presentList() { if (!R.present) R.present = alive().filter(p => !p.away); return R.present; }
@@ -506,161 +516,68 @@ function news(icon, s) {
 }
 
 /* ======================= 5) BAŞLANGIÇ NÜFUSU =======================
-   100 kişi: 60 erkek, 40 kadın. 17 evli çift (34 evli yetişkin),
-   34 bekâr yetişkin ve 32 çocuk/genç. */
+   10 kişi, çoğu genç: dul kahveci baba ve iki çocuğu, yeni evli bir çift,
+   bakkal, öğretmen, çiftçi, genç bir kız ve askere gidecek bir delikanlı. */
 function newGame() {
-  S = {v: 1, min: (2 * MONTH_DAYS) * DAY_MIN + 7 * 60, nextId: 1, people: {}, built: [], biz: [], nextBiz: 1,
-    proj: {}, treasury: 60000, clan: {}, news: [], hist: [], elections: [], muhtar: null, muhtarSince: 0,
+  S = {v: 2, min: (2 * MONTH_DAYS) * DAY_MIN + 7 * 60, nextId: 1, people: {}, built: [], biz: [], nextBiz: 1,
+    proj: {}, treasury: 30000, clan: {}, news: [], hist: [], elections: [], muhtar: null, muhtarSince: 0,
     events: [], courts: [], harvest: 1, harvestSet: null, graves: 0, speed: 1, ctrl: null, god: false,
-    secim: null, lastMonth: 0, termProjects: 0, intro: false};
+    secim: null, termProjects: 0, chat: [], hava: 'gunesli'};
   for (const k in PROJE) S.proj[k] = {st: 0, kalan: 0, n: 0};
   S.built = M.houses.map(() => false);
-  S.lastMonth = curMonth();
-
-  const usedSurnames = shuffle(SOYAD.slice());
-  const clans = usedSurnames.slice(0, 16);
-  const mo = curMonth();
-  const birthFor = a => mo - Math.round(a * 12) - ri(0, 11);
-  let mLeft = 60, fLeft = 40;
+  const mo = curMonth(), used = new Set();
+  const isim = g => { let n; do n = pick(g === 'E' ? ERKEK : KADIN); while (used.has(n)); used.add(n); return n; };
+  const sur = shuffle(SOYAD.slice());
   const mk = (g, a, s, extra) => {
     const tr = randomTraits();
-    return newPerson(Object.assign({g, n: pick(g === 'E' ? ERKEK : KADIN), s, b: birthFor(a), tr, goal: randomGoal(tr),
-      rep: ri(30, 70), hap: ri(50, 80), hl: clamp(Math.round(100 - Math.max(0, a - 40) * 0.8 - rnd(0, 10)), 25, 100)}, extra || {}));
+    return newPerson(Object.assign({g, n: isim(g), s, b: mo - a * 12 - ri(0, 11), tr, goal: randomGoal(tr),
+      rep: ri(40, 65), hap: ri(55, 80), hl: ri(85, 100), edu: pick([2, 3, 3, 3]), askerDone: g === 'E' && a >= 21}, extra || {}));
   };
-  const eduFor = a => { const r = Math.random(); if (a >= 60) return r < .3 ? 0 : 1; if (a >= 40) return r < .5 ? 1 : (r < .8 ? 2 : 3); return r < .15 ? 1 : (r < .4 ? 2 : (r < .85 ? 3 : 4)); };
-  const moneyFor = a => Math.round((a < 18 ? 0 : (a < 25 ? rnd(2000, 15000) : rnd(8000, 60000) * (chance(.12) ? 4 : 1))) / 100) * 100;
-
-  // 1) Evli çiftler
-  const hAges = [26, 28, 30, 32, 34, 35, 38, 41, 44, 46, 48, 50, 54, 58, 63, 68, 74];
-  const couples = [];
-  hAges.forEach((ha, i) => {
-    const s = clans[i % clans.length];
-    const wa = Math.max(19, ha - ri(1, 6));
-    const h = mk('E', ha, s); const w = mk('K', wa, s, {ms: pick(clans.filter(c => c !== s))});
-    h.sp = w.id; w.sp = h.id; mLeft--; fLeft--;
-    h.edu = eduFor(ha); w.edu = Math.max(0, eduFor(wa) - (chance(.4) ? 1 : 0));
-    h.money = moneyFor(ha); w.money = Math.round(moneyFor(wa) * .4);
-    h.askerDone = true;
-    changeRel(h, w, ri(30, 85)); h.rom[w.id] = ri(30, 80); w.rom[h.id] = ri(30, 80);
-    couples.push({h, w, kids: []});
+  // 1) Kahveci baba ve iki genç çocuğu (anneleri vefat etmiş)
+  const baba = mk('E', ri(55, 62), sur[0], {dul: true, edu: 1, rep: 72, money: ri(40000, 70000), hl: ri(70, 85)});
+  if (!baba.tr.includes('dindar')) baba.tr[0] = 'dindar';
+  const ogul = mk('E', ri(22, 26), sur[0], {f: baba.id, money: ri(3000, 9000)});
+  const kiz = mk('K', ri(19, 22), sur[0], {f: baba.id, money: ri(1000, 5000)});
+  baba.ch.push(ogul.id, kiz.id);
+  // 2) Yeni evli genç çift
+  const koca = mk('E', ri(26, 30), sur[1], {money: ri(10000, 25000)});
+  const kari = mk('K', ri(23, 26), sur[1], {ms: sur[2], money: ri(2000, 8000)});
+  koca.sp = kari.id; kari.sp = koca.id;
+  // 3) Bekâr gençler
+  const bakkal = mk('E', ri(25, 29), sur[3], {money: ri(15000, 30000)});
+  const ogretmen = mk('K', ri(23, 27), sur[4], {edu: 4, rep: 62, money: ri(8000, 20000)});
+  const ciftci = mk('E', ri(21, 25), sur[5], {money: ri(4000, 12000), askerDone: true});
+  const genckiz = mk('K', ri(18, 21), sur[6], {money: ri(1000, 5000)});
+  const gencer = mk('E', ri(19, 20), sur[7], {money: ri(500, 3000), askerDone: false});
+  // 4) Evler: meydana en yakın evler
+  const near = M.houses.slice().sort((x, y) => Math.hypot(x.x - M.meydan.cx, x.y - M.meydan.cy) - Math.hypot(y.x - M.meydan.cx, y.y - M.meydan.cy));
+  [[baba, ogul, kiz], [koca, kari], [bakkal], [ogretmen], [ciftci], [genckiz], [gencer]].forEach((list, i) => {
+    const h = near[i].idx; S.built[h] = true; for (const p of list) p.h = h;
   });
-  const addChild = (cp, c) => {
-    // Kardeşlerin adı aynı olmasın
-    while (cp.kids.some(k => k.n === c.n)) c.n = pick(c.g === 'E' ? ERKEK : KADIN);
-    c.f = cp.h.id; c.m = cp.w.id; cp.h.ch.push(c.id); cp.w.ch.push(c.id); cp.kids.push(c);
-  };
-
-  // 2) Bekâr yetişkinler: 26 erkek, 8 kadın (kimisi ailesinin yanında, kimisi yalnız, kimisi dul yaşlı)
-  const singles = [];
-  const singleSpecs = [];
-  for (let i = 0; i < 26; i++) singleSpecs.push('E');
-  for (let i = 0; i < 8; i++) singleSpecs.push('K');
-  shuffle(singleSpecs);
-  const loneHouseholds = [];
-  for (const g of singleSpecs) {
-    const r = Math.random();
-    let a = r < .62 ? ri(18, 31) : (r < .82 ? ri(32, 52) : ri(62, 86));
-    if (a <= 31) {
-      const cp = shuffle(couples.slice()).find(c => (age(c.w) >= a + 19) && c.kids.length < 5);
-      if (cp) { const c = mk(g, a, cp.h.s); addChild(cp, c); singles.push(c); c.edu = eduFor(a); c.money = moneyFor(a); if (g === 'E' && a >= 21) c.askerDone = true; if (g === 'E') mLeft--; else fLeft--; continue; }
-    }
-    if (a >= 62) {
-      // dul yaşlı: oğlunun hanesinde yaşar
-      const cp = couples.find(c => !c.h.f && age(c.h) <= a - 20 && age(c.h) >= a - 40);
-      if (cp) {
-        const e = mk(g, a, cp.h.s, {dul: true}); e.ch.push(cp.h.id);
-        if (g === 'E') cp.h.f = e.id; else cp.h.m = e.id;
-        e.edu = eduFor(a); e.money = moneyFor(a); e.askerDone = true; e.liveWith = cp; singles.push(e);
-        changeRel(e, cp.h, ri(40, 80));
-        if (g === 'E') mLeft--; else fLeft--; continue;
-      }
-    }
-    const s = pick(SOYAD);
-    const p = mk(g, a, s, a >= 60 ? {dul: true} : {});
-    p.edu = eduFor(a); p.money = moneyFor(a); if (g === 'E' && a >= 21) p.askerDone = true;
-    loneHouseholds.push(p); singles.push(p);
-    if (g === 'E') mLeft--; else fLeft--;
-  }
-
-  // 3) Çocuklar ve gençler (kalan kontenjan)
-  const kidGenders = []; for (let i = 0; i < mLeft; i++) kidGenders.push('E'); for (let i = 0; i < fLeft; i++) kidGenders.push('K');
-  shuffle(kidGenders);
-  for (const g of kidGenders) {
-    let a = Math.random() < .65 ? ri(0, 11) : ri(12, 17);
-    let cand = couples.filter(c => age(c.w) >= a + 19 && age(c.w) <= a + 42 && c.kids.length < 6);
-    if (!cand.length) { a = ri(0, 5); cand = couples.filter(c => age(c.w) <= a + 42); }
-    if (!cand.length) cand = couples;
-    cand.sort((x, y) => x.kids.length - y.kids.length);
-    const cp = cand[Math.floor(Math.random() * Math.min(4, cand.length))];
-    const c = mk(g, a, cp.h.s); addChild(cp, c);
-    c.hl = ri(85, 100);
-  }
-
-  // 4) Evler
-  let hi = 0;
-  const houseOrder = shuffle(M.houses.map(h => h.idx));
-  const takeHouse = () => { const i = houseOrder[hi++]; S.built[i] = true; return i; };
-  for (const cp of couples) { const i = takeHouse(); cp.h.h = cp.w.h = i; for (const k of cp.kids) k.h = i; }
-  for (const p of singles) if (p.liveWith) { p.h = p.liveWith.h.h; delete p.liveWith; }
-  for (const p of loneHouseholds) p.h = takeHouse();
-
-  // 5) Eğitim, okul ve meslekler
+  // 5) Meslekler
+  createBiz(baba, 'kahvehane', true); createBiz(bakkal, 'bakkal', true);
+  const kh = S.biz[0]; ogul.job = {t: 'isci', w: kh.id}; kh.emp.push(ogul.id);
+  kiz.job = {t: 'ev'}; koca.job = {t: 'ciftci', w: 0}; kari.job = {t: 'hayvanci', w: 0};
+  ogretmen.job = {t: 'ogretmen', w: 'ilkokul'}; ciftci.job = {t: 'ciftci', w: 1};
+  genckiz.job = {t: 'hayvanci', w: 0}; gencer.job = {t: 'issiz'};
   const all = alive();
-  for (const p of all) {
-    const a = age(p);
-    if (a < 18) {
-      p.edu = a >= 18 ? 3 : a >= 14 ? 2 : a >= 10 ? 1 : 0;
-      if (a >= 6 && a < 10) p.school = 'ilkokul';
-      else if (a >= 10 && a < 14 && chance(.4)) p.school = 'ortaokul';
-      else if (a >= 14 && chance(.25)) p.school = 'lise';
-    }
-  }
-  const adults = all.filter(p => age(p) >= 18);
-  // İmam
-  const imam = adults.filter(p => p.g === 'E' && age(p) >= 30 && age(p) < 65).sort((a, b) => (has(b, 'dindar') - has(a, 'dindar')) || (b.edu - a.edu))[0];
-  if (imam) { imam.job = {t: 'imam', w: 'cami'}; if (!has(imam, 'dindar')) imam.tr[1] = 'dindar'; imam.edu = Math.max(imam.edu, 3); imam.rep = 72; }
-  for (const p of adults) {
-    if (p.job) continue;
-    const a = age(p);
-    if (a >= 65) p.job = {t: 'emekli'};
-    else if (p.edu === 4 && chance(.5)) p.job = {t: 'ogretmen', w: 'ilkokul'};
-    else if (p.g === 'K' && p.sp != null && chance(.55)) p.job = {t: 'ev'};
-    else if (chance(.18)) p.job = {t: 'hayvanci', w: ri(0, M.ahir.length - 1)};
-    else if (chance(.12)) p.job = {t: 'issiz'};
-    else p.job = {t: 'ciftci', w: ri(0, M.tarla.length - 1)};
-    if (p.job.t !== 'issiz' && p.job.t !== 'ev') p.worked = true;
-  }
-  // Teacher limit
-  let tcount = 0; for (const p of adults) if (p.job.t === 'ogretmen' && ++tcount > 2) p.job = {t: 'ciftci', w: 0};
-  // Başlangıç işletmeleri: bakkal + kahvehane
-  const owners = adults.filter(p => age(p) >= 28 && age(p) < 62 && p.job.t !== 'imam' && p.job.t !== 'ogretmen').sort((a, b) => b.money - a.money);
-  const bo = owners[0], ko = owners.find(p => p !== bo && p.g === 'E') || owners[1];
-  if (bo) createBiz(bo, 'bakkal', true);
-  if (ko) createBiz(ko, 'kahvehane', true);
-
-  // 6) İlişkiler: aile içi sıcak, komşular ve köylüler arasında karışık
-  for (const p of all) {
-    for (const q of [P(p.f), P(p.m), ...children(p), ...siblings(p)]) if (q) { changeRel(p, q, ri(40, 80), false); }
-    for (let i = 0; i < 9; i++) {
-      const q = pick(all); if (q === p) continue;
-      changeRel(p, q, ri(-35, 55));
-    }
-  }
-  for (let i = 0; i < 8; i++) { const a = pick(adults), b = pick(adults); if (a !== b && !isKin(a, b)) { changeRel(a, b, -ri(40, 70)); setKus(a, b, true); } }
-  // Sülaleler arası ilişki: birkaç husumet ve birkaç dostluk
-  const vClans = [...new Set(all.map(p => p.s))];
-  for (let i = 0; i < vClans.length; i++) for (let j = i + 1; j < vClans.length; j++) if (chance(.2)) S.clan[clanKey(vClans[i], vClans[j])] = ri(-35, 45);
-  for (let i = 0; i < 2; i++) { const a = pick(vClans), b = pick(vClans); if (a !== b) S.clan[clanKey(a, b)] = -ri(55, 75); }
-  for (const p of all) if (p.ms && p.ms !== p.s) S.clan[clanKey(p.ms, p.s)] = Math.max(S.clan[clanKey(p.ms, p.s)] || 0, ri(25, 55));
-
-  // 7) Muhtar: en saygın orta yaşlı
-  for (const p of adults) if (p.goal === 'muhtar') p.rep = Math.min(85, p.rep + 10);
-  const muh = adults.filter(p => age(p) >= 35 && age(p) < 70 && p.job.t !== 'ev').sort((a, b) => b.rep - a.rep)[0];
-  if (muh) { S.muhtar = muh.id; muh.rep = Math.max(muh.rep, 70); if (muh.goal === 'muhtar') muh.goalDone = true;
-    S.elections.push({y: curYear(), w: muh.id, wn: fn(muh), note: 'Başlangıç muhtarı', votes: []}); }
-
-  news('🏡', 'Köyümüze hoş geldiniz! 100 kişilik köyde yeni bir dönem başlıyor.');
-  if (muh) news('🏛️', `Köyün muhtarı ${fn(muh)}.`);
+  for (const p of all) if (p.job && !['ev', 'issiz'].includes(p.job.t)) p.worked = true;
+  // 6) İlişkiler: küçük köyde herkes birbirini tanır
+  for (const a of all) for (const b of all) if (a !== b) a.rel[b.id] = ri(-10, 35);
+  for (const [a, b] of [[baba, ogul], [baba, kiz], [ogul, kiz], [koca, kari]]) { a.rel[b.id] = ri(55, 85); b.rel[a.id] = ri(55, 85); }
+  koca.rom[kari.id] = ri(55, 85); kari.rom[koca.id] = ri(50, 85);
+  ogul.rom[genckiz.id] = ri(25, 45); genckiz.rom[ogul.id] = ri(15, 40);   // filizlenen bir aşk
+  bakkal.rom[kiz.id] = ri(30, 50); kiz.rom[bakkal.id] = ri(10, 45);       // bakkalın gözü kahvecinin kızında
+  ciftci.rel[gencer.id] = gencer.rel[ciftci.id] = ri(60, 80);             // can dostlar
+  kiz.rel[genckiz.id] = genckiz.rel[kiz.id] = ri(50, 75);
+  bakkal.rel[koca.id] = -ri(30, 45); koca.rel[bakkal.id] = -ri(30, 45);   // eski bir küslük
+  S.clan[clanKey(sur[3], sur[1])] = -40;
+  S.clan[clanKey(sur[0], sur[2])] = 30;
+  // 7) Muhtar: köyün en yaşlısı ve en saygını
+  S.muhtar = baba.id; if (baba.goal === 'muhtar') baba.goalDone = true;
+  S.elections.push({y: curYear(), w: baba.id, wn: fn(baba), note: 'Başlangıç muhtarı', votes: []});
+  news('🏡', 'Köyümüze hoş geldiniz! 10 kişilik küçük köyümüzde yeni bir dönem başlıyor.');
+  news('☕', `${fn(baba)} hem köyün muhtarı hem de kahvehanenin sahibi.`);
   R.mapDirty = true;
 }
 
@@ -669,7 +586,7 @@ function bizById(id) { return S.biz.find(b => b.id === id); }
 function freeLot() { const used = new Set(S.biz.map(b => b.lot)); for (const l of M.lots) if (!used.has(l.idx)) return l.idx; return -1; }
 function bizUnlocked(t) { return alive().length >= ISLETME[t].pop; }
 /* Aynı türden en fazla kaç işletme olabilir (dükkân yerleri üst işletmelere de kalsın) */
-function bizRoom(t) { return S.biz.filter(b => b.t === t).length < 1 + Math.floor(alive().length / 70); }
+function bizRoom(t) { return S.biz.filter(b => b.t === t).length < 1 + Math.floor(alive().length / 40); }
 function createBiz(owner, t, silent) {
   const lot = freeLot(); if (lot < 0) return null;
   const T = ISLETME[t];
@@ -712,7 +629,7 @@ function wageOf(p) { return 2400 + 250 * p.edu; }
 function expectedProfit(t) {
   const T = ISLETME[t], pop = alive().length;
   let pf = prosperity(); if (T.cat === 'yakit' || T.cat === 'araba') pf = Math.pow(pf, 1.5);
-  const demand = pop * KATEGORI[T.cat] * pf;
+  const demand = (BAZ[T.cat] + pop * KATEGORI[T.cat]) * pf;
   const comp = S.biz.filter(b => ISLETME[b.t].cat === T.cat).reduce((s, b) => s + ISLETME[b.t].w, 0);
   const share = T.w / (comp + T.w);
   return demand * share * T.margin - T.staff * 2600 - T.cost * .006 - 1200;
@@ -744,7 +661,7 @@ function monthlyEconomy() {
   for (const cat in cats) {
     const list = cats[cat];
     let pf = pros; if (cat === 'yakit' || cat === 'araba') pf = Math.pow(pros, 1.5);
-    const demand = pop * KATEGORI[cat] * pf * (asfalt ? 1.1 : 1);
+    const demand = (BAZ[cat] + pop * KATEGORI[cat]) * pf * (asfalt ? 1.1 : 1);
     const scores = list.map(b => {
       const o = P(b.owner), T = ISLETME[b.t];
       const q = 1 + (has(o, 'kurnaz') ? .15 : 0) + (has(o, 'caliskan') ? .1 : 0) - (has(o, 'tembel') ? .12 : 0) + (o.rep - 50) / 200;
@@ -800,7 +717,7 @@ function monthlyEconomy() {
   }
   // 6) Köy hazinesi: aidat + devlet payı
   const adults = all.filter(p => age(p) >= 18 && !p.away).length;
-  S.treasury += adults * 40 + pop * 25;
+  S.treasury += 3500 + adults * 40 + pop * 25; // devlet payı + aidat
   // Kurnaz muhtar hazineden para aşırabilir
   const muh = P(S.muhtar);
   if (isAlive(muh) && has(muh, 'kurnaz') && !controlled(muh) && chance(.08) && S.treasury > 20000) {
@@ -1015,7 +932,7 @@ function monthlyLife() {
     }
     // --- Göç (nüfus kalabalıksa ya da iş yoksa gençler şehre gider) ---
     if (a >= 18 && a < 32 && p.sp == null && !controlled(p) && p.job && p.job.t === 'issiz' && !p.ch.length && !courtOf(p.id)) {
-      const pg = (pop > 270 ? .05 : .004) + (p.edu === 4 ? .02 : 0);
+      const pg = pop > 40 ? .03 + (p.edu === 4 ? .02 : 0) : 0;
       if (chance(pg)) { p.left = true; p.dm = cm; leaveJob(p); p.h = -1; dirty(); delete R.ag[p.id]; news('🚌', `${fn(p)} iş bulmak için şehre göç etti.`); continue; }
     }
   }
@@ -1117,7 +1034,6 @@ function endCourt(c) { S.courts = S.courts.filter(x => x !== c); }
 /* Evlilik başlatma: tanışma (karşılıklı sevgi) ya da görücü usulü */
 function monthlyMarriage() {
   const women = presentList().filter(p => marriageable(p, 'K'));
-  if (!women.length) return;
   for (const g of presentList()) {
     if (!marriageable(g, 'E') || controlled(g)) continue;
     const a = age(g);
@@ -1131,7 +1047,15 @@ function monthlyMarriage() {
     if (g.goal === 'aile') pg += .04; if (has(g, 'dindar')) pg += .02; if (g.dul || g.bosandi) pg *= .5;
     if (!chance(pg)) continue;
     const cands = shuffle(women.filter(b => suitable(g, b))).slice(0, 8);
-    if (!cands.length) continue;
+    if (!cands.length) {
+      // Köyde uygun kız yoksa komşu köyden görücüye gidilir
+      if (!chance(.4)) continue;
+      const tr = randomTraits(), ba = clamp(age(g) - ri(1, 8), 19, 40);
+      const nb = newPerson({g: 'K', n: pick(KADIN), s: pick(SOYAD), b: curMonth() - ba * 12 - ri(0, 11), tr, goal: randomGoal(tr),
+        away: 'komsu', money: ri(2000, 12000), edu: ri(1, 3), rep: ri(45, 65)});
+      startCourt(g, nb, true);
+      continue;
+    }
     cands.sort((x, y) => score(y) - score(x));
     function score(b) { return clanRel(g.s, b.s) * .5 + b.rep * .3 + (P(b.f) ? P(b.f).money / 5000 : 0) + relV(g, b) * .3 + (has(b, 'caliskan') ? 8 : 0) + rnd(0, 20); }
     startCourt(g, cands[0], true);
@@ -1178,11 +1102,12 @@ const EVENT = {
   isteme(e) {
     const g = P(e.g), b = P(e.b), c = S.courts.find(x => x.g === e.g && x.b === e.b);
     if (!c) return;
-    if (!present(g) || !present(b) || b.sp != null || g.sp != null) { endCourt(c); return; }
+    if (!present(g) || !pres(b) || b.sp != null || g.sp != null) { endCourt(c); return; }
     const bf = P(b.f), bm = P(b.m);
     const gFam = [g, P(g.f), P(g.m)].filter(present);
-    addGather('isteme', {pl: M.houses[b.h], out: false}, 19, 21.5, gFam.concat(hm(b.h).filter(present)), '☕');
-    news('☕', `${g.s} ailesi, ${nin(bf ? fn(bf) : fn(b))} kızı ${yi(b.n)} ${ye(g.n)} istemeye gitti. ${c.gor ? '(Görücü usulü)' : ''} Kahveler ikram edildi.`);
+    addGather('isteme', {pl: b.h >= 0 ? M.houses[b.h] : M.cikis, out: false}, 19, 21.5, gFam.concat(hm(b.h).filter(present)), '☕');
+    const kimin = b.away === 'komsu' ? `komşu köyden ${b.s} ailesinin kızı` : (bf ? nin(fn(bf)) + ' kızı' : '');
+    news('☕', `${g.s} ailesi, ${kimin} ${yi(b.n)} ${ye(g.n)} istemeye gitti. ${c.gor ? '(Görücü usulü)' : ''} Kahveler ikram edildi.`);
     const decider = [b, bf, bm].find(q => q && controlled(q));
     const sc = istemeScore(g, b);
     if (decider) {
@@ -1192,29 +1117,30 @@ const EVENT = {
   },
   nisan(e) {
     const c = S.courts.find(x => x.g === e.g && x.b === e.b), g = P(e.g), b = P(e.b);
-    if (!c || !present(g) || !present(b)) { if (c) endCourt(c); return; }
+    if (!c || !present(g) || !pres(b)) { if (c) endCourt(c); return; }
     // Nadiren nişan bozulur
     if (relV(b, g) < -30 && chance(.5)) { endCourt(c); changeClan(g.s, b.s, -10); news('💔', `${fn(g)} ile ${nin(b.n)} nişanı bozuldu.`); return; }
     c.st = 'nisan';
     const gold = 15000; pay(g, gold, P(g.f));
     changeRel(g, b, 15); g.rom[b.id] = Math.max(g.rom[b.id] || 0, 50); b.rom[g.id] = Math.max(b.rom[g.id] || 0, 40);
-    addGather('nisan', {pl: M.houses[b.h], out: false}, 18, 21.5, familyOf(g).concat(familyOf(b), friendsOf(b, 4), friendsOf(g, 4)), '💍');
+    addGather('nisan', {pl: b.h >= 0 ? M.houses[b.h] : M.cikis, out: false}, 18, 21.5, familyOf(g).concat(familyOf(b), friendsOf(b, 4), friendsOf(g, 4)), '💍');
     news('💍', `${fn(g)} ile ${fn(b)} nişanlandı. Yüzükler takıldı, tatlılar dağıtıldı.`);
     S.events.push({k: 'kina', day: curDay() + ri(25, 55), g: g.id, b: b.id});
   },
   kina(e) {
     const c = S.courts.find(x => x.g === e.g && x.b === e.b), g = P(e.g), b = P(e.b);
-    if (!c || !present(g) || !present(b)) { if (c) endCourt(c); return; }
+    if (!c || !present(g) || !pres(b)) { if (c) endCourt(c); return; }
     c.st = 'kina';
     const women = familyOf(b).concat(familyOf(g), friendsOf(b, 8), sample(presentList().filter(q => q.g === 'K' && age(q) >= 12), .25)).filter(q => q.g === 'K');
-    addGather('kina', {pl: M.houses[b.h], out: false}, 19, 23, women, '🌿');
+    addGather('kina', {pl: b.h >= 0 ? M.houses[b.h] : M.cikis, out: false}, 19, 23, women, '🌿');
     news('🌿', `${nin(fn(b))} kına gecesi yapıldı. Kadınlar türküler söyledi, gelinin eline kına yakıldı.`);
     S.events.push({k: 'dugun', day: curDay() + 1, g: g.id, b: b.id});
   },
   dugun(e) {
     const c = S.courts.find(x => x.g === e.g && x.b === e.b), g = P(e.g), b = P(e.b);
     if (c) endCourt(c);
-    if (!present(g) || !present(b) || g.sp != null || b.sp != null) return;
+    if (!present(g) || !pres(b) || g.sp != null || b.sp != null) return;
+    if (b.away === 'komsu') { b.away = null; dirty(); news('👰', `${b.n} gelin olarak komşu köyden köyümüze geldi.`); }
     const salon = S.proj.salon.st === 2;
     const cost = salon ? 25000 : 30000;
     pay(g, cost * .7, P(g.f)); pay(b, cost * .3, P(b.f));
@@ -1247,7 +1173,7 @@ const EVENT = {
   },
   askerGit(e) {
     const p = P(e.id); if (!present(p)) return;
-    leaveJob(p); p.job = null; p.away = 'asker'; p.ret = curMonth() + 12; delete R.ag[p.id]; dirty();
+    leaveJob(p); p.job = null; p.away = 'asker'; p.ret = curMonth() + 6; delete R.ag[p.id]; dirty();
   },
   donus(e) {
     const p = P(e.id); if (!present(p)) return;
@@ -1289,6 +1215,7 @@ const EVENT = {
   },
 };
 
+const pres = p => isAlive(p) && (!p.away || p.away === 'komsu');
 function istemeSonuc(c, ok) {
   const g = P(c.g), b = P(c.b); if (!g || !b) { endCourt(c); return; }
   const bf = P(b.f);
@@ -1499,7 +1426,7 @@ function bayramStart(k) {
 /* ======================= 9) SEÇİM VE MUHTARLIK ======================= */
 function secimBaslat(gunSonra) {
   if (S.secim) return;
-  const adults = presentList().filter(p => age(p) >= 25);
+  const adults = presentList().filter(p => age(p) >= 23);
   let cands = adults.filter(p => (p.goal === 'muhtar' && p.rep >= 30) || p.cand);
   const inc = P(S.muhtar);
   if (present(inc) && inc.rep >= 30 && !cands.includes(inc) && (!controlled(inc) || inc.cand)) cands.push(inc);
@@ -1559,9 +1486,9 @@ function projeUygun(k) {
   if (k === 'cesme') return st.n < PROJE.cesme.max;
   if (st.st !== 0) return false;
   switch (k) {
-    case 'park': return pop >= 80; case 'ortaokul': return kids >= 12; case 'asfalt': return pop >= 90;
-    case 'saglik': return pop >= 120; case 'kutuphane': return S.proj.ortaokul.st === 2;
-    case 'lise': return S.proj.ortaokul.st === 2 && pop >= 140; case 'salon': return pop >= 150;
+    case 'park': return pop >= 12; case 'ortaokul': return kids >= 4; case 'asfalt': return pop >= 12;
+    case 'saglik': return pop >= 18; case 'kutuphane': return S.proj.ortaokul.st === 2;
+    case 'lise': return S.proj.ortaokul.st === 2 && pop >= 25; case 'salon': return pop >= 20;
   }
   return false;
 }
@@ -1627,7 +1554,7 @@ function monthlyTick() {
   monthlyMood();
   monthlyProjects();
   // Nüfus azaldıysa yeni aile göç eder
-  if (alive().length < 70 && chance(.25)) migrateIn();
+  if (alive().length < 6 && chance(.25)) migrateIn();
   pruneRelations();
   if (mo === 0) prunePeople();
   const all = alive();
@@ -1645,11 +1572,19 @@ function dailyTick() {
   const otuz = bayramToday(d + 30);
   if (otuz && otuz.n === 0 && otuz.k === 'ram') news('🌙', 'Ramazan ayı başladı. Hayırlı Ramazanlar!');
   if (bay && bay.n === 0) bayramStart(bay.k);
+  S.hava = rollHava(MEVSIM(moy()));
   runEvents();
   buildSchedules(bay);
   socialFromGroups();
 }
 
+/* Günlük hava durumu (mevsime göre) */
+function rollHava(se) {
+  const t = [[['karli', .4], ['bulutlu', .3], ['gunesli', .2], ['sisli', .1]], [['gunesli', .45], ['bulutlu', .3], ['yagmurlu', .25]],
+    [['gunesli', .8], ['bulutlu', .15], ['yagmurlu', .05]], [['bulutlu', .35], ['yagmurlu', .3], ['gunesli', .25], ['sisli', .1]]][se];
+  let x = Math.random(); for (const [k, w] of t) { x -= w; if (x <= 0) return k; }
+  return t[0][0];
+}
 function migrateIn() {
   const h = findFreeHouse(-1); if (h < 0) return;
   const s = pick(SOYAD);
@@ -1680,6 +1615,7 @@ function pruneRelations() {
 /* Aile ağacı için gerekmeyen eski kayıtları sil (kayıt dosyası küçük kalsın) */
 function prunePeople() {
   const keep = new Set();
+  for (const c of S.courts) { keep.add(c.g); keep.add(c.b); }
   for (const p of alive()) {
     keep.add(p.id); if (p.sp != null) keep.add(p.sp);
     for (const id of [p.f, p.m]) { if (id != null) { keep.add(id); const q = S.people[id]; if (q) { if (q.f != null) keep.add(q.f); if (q.m != null) keep.add(q.m); if (q.sp != null) keep.add(q.sp); } } }
@@ -1724,6 +1660,7 @@ function buildSchedules(bay) {
   const d = curDay(), dow = d % 7, mo = moy(), se = MEVSIM(mo);
   const schoolOpen = !bay && dow < 5 && !(mo >= 5 && mo <= 7);
   const workDay = !bay && dow < 6;
+  const bad = S.hava === 'yagmurlu' || S.hava === 'karli';
   R.groups = new Map();
   const addG = (k, p) => { if (!k) return; if (!R.groups.has(k)) R.groups.set(k, []); R.groups.get(k).push(p); };
   const muhId = S.muhtar;
@@ -1745,7 +1682,7 @@ function buildSchedules(bay) {
     else if (jt && workDay) {
       switch (jt) {
         case 'ciftci':
-          if (se !== 0) { const t = M.tarla[p.job.w % M.tarla.length]; set(6.5 + J(), dOut(t), 'tarla:' + t.idx); s.push([18 + J(), home]); }
+          if (se !== 0 && !bad) { const t = M.tarla[p.job.w % M.tarla.length]; set(6.5 + J(), dOut(t), 'tarla:' + t.idx); s.push([18 + J(), home]); }
           else if (p.g === 'E') { const [kd, kk] = kahveDest(p); set(10 + J(), kd, kk); s.push([16 + J(), home]); }
           break;
         case 'hayvanci': { const ah = M.ahir[p.job.w % M.ahir.length]; set(6 + J(), se === 0 ? dIn(ah) : dOut(ah, ah.mera), 'ahir:' + ah.idx); s.push([17.5 + J(), home]); break; }
@@ -1758,6 +1695,7 @@ function buildSchedules(bay) {
         case 'doktor': case 'hemsire': if (S.proj.saglik.st === 2) { set(8, dIn(M.kamu.saglik), 'is:saglik'); s.push([17, home]); } break;
         case 'imam': set(5.5, dIn(M.cami), 'cami'); s.push([21, home]); break;
         case 'ev': {
+          if (!bad && chance(.35)) { s.push([8.5 + J(), dOut(M.meydan)]); s.push([9.5, home]); } // çeşme başı
           if (chance(.4)) { const sd = shopDest('gida'); if (sd) { set(10 + J(), sd[0], sd[1]); s.push([11, home]); } }
           if (chance(.45)) { const v = visitDest(p); if (v) { set(14.5 + J(), v[0], v[1]); s.push([16.5 + J(), home]); } }
           break;
@@ -1785,7 +1723,7 @@ function buildSchedules(bay) {
     if (p.id === muhId && workDay) { s = s.filter(e => e[0] < 9 || e[0] >= 11.5); s.push([9, dIn(M.muhtarlik)]); s.push([11.5, mainDest || home]); addG('muhtarlik', p); }
     // Akşam: kahvehane / meydanda gezinti
     if (a >= 18 && p.g === 'E' && jt !== 'imam' && chance(has(p, 'neseli') || has(p, 'sinirli') ? .35 : .22)) { const [kd, kk] = kahveDest(p); s.push([19.8 + J(), kd]); s.push([22.5, home]); eve = kk; }
-    else if (a >= 15 && a < 30 && p.sp == null && chance(.15)) { s.push([19.5 + J(), dOut(M.meydan)]); s.push([21.5, home]); eve = 'meydan'; }
+    else if (a >= 14 && a < 32 && !bad && chance(.35)) { s.push([19.5 + J(), dOut(M.meydan)]); s.push([21.8 + J(), home]); eve = 'meydan'; }
     // Toplu etkinlikler (düğün, cenaze, uğurlama...) programın önüne geçer
     const gl = R.gatherBy.get(p.id);
     if (gl) for (const g of gl) {
@@ -1805,17 +1743,8 @@ function buildSchedules(bay) {
   }
 }
 
-/* Aynı yerde bulunanlar arasında sosyal etkileşim */
+/* Görünmeyen aile sıcaklığı (asıl sosyal hayat sohbetlerde yaşanır) */
 function socialFromGroups() {
-  for (const [k, arr] of R.groups) {
-    if (arr.length < 2) continue;
-    const ctx = k.startsWith('kahve') ? 'kahve' : k.startsWith('g:dugun') ? 'dugun' : k.startsWith('g:cenaze') ? 'cenaze'
-      : k.startsWith('bayram') ? 'bayram' : k.startsWith('meydan') || k.startsWith('g:') ? 'meydan' : k.startsWith('okul') ? 'okul'
-      : (k.startsWith('is') || k.startsWith('tarla') || k.startsWith('ahir')) ? 'is' : 'ev';
-    const n = Math.min(Math.ceil(arr.length * .5), 24);
-    for (let i = 0; i < n; i++) { const a = pick(arr), b = pick(arr); if (a !== b) interact(a, b, ctx); }
-  }
-  // Hane içi sıcaklık (haftada bir)
   if (curDay() % 7 === 6) for (const p of presentList()) for (const q of hm(p.h)) if (q !== p && present(q) && chance(.5)) changeRel(p, q, rnd(-.5, 2), false);
 }
 
@@ -1853,18 +1782,630 @@ function updateAgents(gm) {
     if (!p || !present(p)) { delete R.ag[id]; continue; }
     let nd = null;
     while (ag.si < ag.sched.length && ag.sched[ag.si][0] <= hr) { nd = ag.sched[ag.si][1]; ag.si++; }
-    if (nd) goTo(ag, nd);
+    if (ag.override && ag.override <= S.min) { ag.override = 0; if (!nd) nd = ag.pend; ag.pend = null; }
+    const busy = ag.talk || ag.chase || ag.override;
+    if (nd) { if (busy) ag.pend = nd; else goTo(ag, nd); }
+    // Birinin yanına gidip konuşma (oyuncu ya da Tanrı modu)
+    if (ag.chase && !ag.talk) {
+      const t = S.people[ag.chase.id], ta = R.ag[ag.chase.id];
+      if (!present(t) || !ta || S.min > ag.chase.until) { ag.chase = null; if (ag.pend) { goTo(ag, ag.pend); ag.pend = null; } }
+      else {
+        const near = (ag.inside && ta.inside && ag.curPl === ta.curPl) || (!ag.inside && !ta.inside && Math.hypot(ag.x - ta.x, ag.y - ta.y) < 22);
+        if (near && !ta.talk) { const topic = ag.chase.topic; ag.chase = null; startConv(p, t, topic); }
+        else if ((ag.chase.next || 0) <= S.min) {
+          ag.chase.next = S.min + 4;
+          goTo(ag, ta.inside ? {pl: ta.curPl, out: false} : {pl: ta.curPl, out: true, x: ta.x + 8, y: ta.y});
+        }
+      }
+    }
     if (ag.pi < ag.path.length) {
       let dd = dist;
       while (dd > 0 && ag.pi < ag.path.length) {
         const t = ag.path[ag.pi], dx = t.x - ag.x, dy = t.y - ag.y, L = Math.hypot(dx, dy);
         if (L <= dd) { ag.x = t.x; ag.y = t.y; dd -= L; ag.pi++; } else { ag.x += dx / L * dd; ag.y += dy / L * dd; dd = 0; }
       }
-      if (ag.pi >= ag.path.length && ag.dest) { if (!ag.dest.out) ag.inside = true; else if (ag.dest.ring) ag.ring = ag.dest.ring; }
+      if (ag.pi >= ag.path.length && ag.dest && !ag.talk) { if (!ag.dest.out) ag.inside = true; else if (ag.dest.ring) ag.ring = ag.dest.ring; }
     }
     if (ag.ring) { const a = ag.ring.a0 + performance.now() / 2500; ag.x = ag.ring.cx + ag.ring.r * Math.cos(a); ag.y = ag.ring.cy + ag.ring.r * Math.sin(a); }
   }
 }
+
+/* ======================= 10b) KONUŞMALAR =======================
+   Köylüler karşılaşınca (yolda, kahvede, meydanda, aynı evde) sohbet eder.
+   Her sohbet: selamlaşma → bir/iki konu → vedalaşma. Konu; kişilik, ilişki,
+   hava, mekân ve köydeki son olaylara göre seçilir. Sohbetin sonunda
+   konunun etkisi (fx) uygulanır: ilişki, aşk, itibar, para, iş, kavga...
+   Yeni konu eklemek için T('anahtar', ağırlıkFonksiyonu, akışFonksiyonu). */
+const TOPIC = {};
+function T(key, w, run) { TOPIC[key] = {w, run}; }
+const ucf = s => s.charAt(0).toLocaleUpperCase('tr') + s.slice(1);
+function remember(p, t) { p.mem = p.mem || []; p.mem.push({d: curDay(), t}); if (p.mem.length > 12) p.mem.shift(); }
+
+/* a, b'ye nasıl seslenir: abi, abla, amca, teyze, kanka, oğlum… */
+function hitap(a, b) {
+  if (a.sp === b.id) return b.g === 'K' ? pick(['hanım', b.n]) : pick(['bey', b.n]);
+  if (b.id === a.f) return 'baba'; if (b.id === a.m) return 'anne';
+  if (a.id === b.f || a.id === b.m) return b.g === 'E' ? 'oğlum' : 'kızım';
+  const d = age(b) - age(a);
+  const sib = (a.f != null && a.f === b.f) || (a.m != null && a.m === b.m);
+  if (sib) return d > 0 ? (b.g === 'E' ? 'abi' : 'abla') : 'kardeşim';
+  if (d >= 20) return b.n + (b.g === 'E' ? ' amca' : ' teyze');
+  if (d <= -20) return b.g === 'E' ? 'evlat' : 'kızım';
+  if (d >= 4) return b.n + (b.g === 'E' ? ' abi' : ' abla');
+  if (a.g === 'E' && b.g === 'E' && relV(a, b) >= 45 && age(a) < 35) return pick(['kanka', 'kardeşim', b.n]);
+  return b.n;
+}
+
+function placeKind(pl) {
+  if (!pl) return 'yol';
+  switch (pl.kind) {
+    case 'lot': { const b = S.biz.find(x => x.lot === pl.idx); return b && b.t === 'kahvehane' ? 'kahve' : 'is'; }
+    case 'meydan': return 'meydan'; case 'cami': return 'cami'; case 'ev': return 'ev';
+    case 'tarla': return 'tarla'; case 'ahir': return 'ahir'; case 'okul': case 'avlu': return 'okul';
+  }
+  return 'yol';
+}
+const OLAY_IKON = '💒🕯️👶👊💍🏛️🎖️🎉📉🙅💔🗣️🤲🏃💕🚌🎓👰';
+function convCtx(a, b) {
+  const A = R.ag[a.id], B = R.ag[b.id], pl = A ? A.curPl : null, inside = !!(A && A.inside), d = curDay();
+  return {
+    hr: hourNow(), se: MEVSIM(moy()), hava: S.hava || 'gunesli', pl, inside, pk: placeKind(pl),
+    home: inside && pl && pl.kind === 'ev' && a.h === b.h && M.houses[a.h] === pl,
+    walking: !!((A && A.pi < A.path.length) || (B && B.pi < B.path.length)),
+    news: S.news.filter(n => d - n.d <= 3 && OLAY_IKON.includes(n.i)),
+    third: presentList().filter(q => q !== a && q !== b && age(q) >= 14), dert: false,
+  };
+}
+
+function greet(a, b, c, say, short) {
+  const ha = hitap(a, b), hb = hitap(b, a), elder = age(a) >= 40 || age(b) >= 40;
+  let g;
+  if (c.hr < 11) g = pick([`Günaydın ${ha}!`, `Hayırlı sabahlar ${ha}.`]);
+  else if (c.hr >= 18.5) g = pick([`İyi akşamlar ${ha}.`, `Hayırlı akşamlar ${ha}.`]);
+  else if (a.g === 'E' && b.g === 'E' && (elder || has(a, 'dindar'))) g = `Selamün aleyküm ${ha}.`;
+  else g = pick([`Merhaba ${ha}!`, `Selam ${ha}!`, `Ooo ${ha}, ne haber?`]);
+  if (age(a) < 30 && age(b) < 30 && a.g === 'E' && b.g === 'E' && relV(a, b) > 45) g = pick([`Naber ${ha}!`, `Ooo ${ha}, nerelerdesin?`]);
+  say(0, g);
+  const r0 = g.startsWith('Selamün') ? `Aleyküm selam ${hb}.` : g.startsWith('Günaydın') ? `Günaydın ${hb}.` : g.includes('sabahlar') ? `Sana da hayırlı sabahlar ${hb}.` : g.includes('akşamlar') ? `Sana da ${hb}.` : `Merhaba ${hb}.`;
+  if (short) { say(1, r0 + ' ' + pick(['Kolay gelsin.', 'Hayırlı işler.', 'Selam söyle evdekilere.'])); return; }
+  say(1, r0 + ' ' + pick(c.walking ? ['Hayırdır, nereye böyle?', 'Nasılsın?'] : ['Nasılsın?', 'Ne var ne yok?', 'Keyifler nasıl?']));
+  if (a.hap < 35) { say(0, pick(['Hiç sorma, keyfim yok.', 'Valla idare ediyoruz işte...', 'Bu aralar biraz dertliyim.'])); c.dert = true; }
+  else say(0, pick(['İyiyim çok şükür, sen?', 'Şükür, sen nasılsın?', 'İyidir, koşturuyoruz işte.']));
+  if (!c.dert) say(1, b.hap < 35 ? pick(['Benimki de pek iyi değil ya.', 'Ben de bir tuhafım bugünlerde.']) : pick(['Ben de iyiyim, sağ ol.', "Allah'a şükür.", 'Koşturuyoruz işte.']));
+}
+function farewell(a, b, c, say) {
+  say(0, pick(['Hadi bana müsaade.', 'Neyse, ben gideyim, işim var.', 'Eyvallah, görüşürüz.', 'Hadi kolay gelsin.', "Haydi, Allah'a emanet ol."]));
+  say(1, pick(['Güle güle.', 'Eyvallah, selamete.', 'Görüşürüz.', "Sen de Allah'a emanet ol.", 'Selam söyle evdekilere.']));
+}
+
+/* ---------- Konular ---------- */
+T('dert', (a, b, c) => c.dert ? 40 : (a.hap < 35 ? 6 : 0), (a, b, c, say) => {
+  let why = 'genel';
+  if (a.debt > 30000) why = 'borc'; else if (a.job && a.job.t === 'issiz' && age(a) >= 18) why = 'issiz';
+  else if (a.sp != null && relV(a, P(a.sp)) < -20) why = 'evlilik'; else if (a.sp == null && age(a) >= 27) why = 'bekar';
+  else if (a.hl < 50) why = 'saglik';
+  const W = {borc: ['Borçlar boğazıma kadar çıktı, nasıl ödeyeceğim bilmiyorum.', 'Bankaya borcum var, faizi bile ödeyemiyorum.'],
+    issiz: ['İş yok güç yok, cebimde beş kuruş kalmadı.', 'Bir iş bulamadım gitti, kimsenin yüzüne bakamıyorum.'],
+    evlilik: ['Evde huzur kalmadı, her gün kavga.', 'Eşimle aram bozuk, ne yapacağımı şaşırdım.'],
+    bekar: ['Yaş geçiyor, hâlâ bir yuva kuramadım.', 'Herkes evlendi, bir ben kaldım.'],
+    saglik: ['Sağlığım iyi değil, her yerim ağrıyor.', 'Doktora gitmem lazım ama ilçe uzak.'],
+    genel: ['Canım sıkkın işte, bilmiyorum neden.', 'İçimde bir sıkıntı var, geçmiyor.']};
+  say(0, pick(W[why]));
+  if (why === 'borc' && has(b, 'comert') && b.money > 25000 && relV(b, a) > 10 && !controlled(b)) {
+    const amt = Math.max(1000, Math.round(Math.min(a.debt, b.money * .15) / 500) * 500);
+    say(1, `Üzme kendini ${hitap(b, a)}. Ben sana ${para(amt)} vereyim, rahatladığında ödersin.`);
+    say(0, pick(['Allah razı olsun, bu iyiliğini unutmam!', 'Ne diyeceğimi bilemiyorum... Sağ ol, eksik olma.']));
+    return () => { b.money -= amt; a.money += amt; changeRel(a, b, 20, false); changeRel(b, a, 8, false); b.rep += 2; a.mood += 15;
+      remember(a, `${fn(b)} borcum için ${para(amt)} verdi.`); remember(b, `${ye(fn(a))} ${para(amt)} yardım ettim.`);
+      if (newsQuota('yardim', 2)) news('🤲', `${fn(b)}, dara düşen ${ye(fn(a))} ${para(amt)} borç verdi.`); };
+  }
+  const bz = b.job && b.job.t === 'sahip' ? bizById(b.job.w) : null;
+  if (why === 'issiz' && bz && bz.emp.length < ISLETME[bz.t].staff && !controlled(b)) {
+    say(1, `Bak ne diyeceğim, benim ${ISLETME[bz.t].ad.toLocaleLowerCase('tr')} yardımcı arıyor. Yarın gel, başla.`);
+    say(0, 'Gerçekten mi? Valla çok sevindim, sabah ilk iş oradayım!');
+    return () => hire(a, b, bz);
+  }
+  if (relV(b, a) > 20 || has(b, 'comert') || has(b, 'neseli') || has(b, 'sakin')) {
+    say(1, pick(['Moralini bozma, her şeyin bir çaresi var.', 'Allah büyük, bu günler de geçer.', 'Bir derdin olursa bana gel, tamam mı?', 'Üzülme, biz buradayız.']));
+    return () => { changeRel(a, b, 5); a.mood += 6; };
+  }
+  say(1, pick(['Herkesin derdi kendine...', 'Ne yapalım, hayat bu.', 'Hı hı... Neyse.']));
+  return () => changeRel(a, b, -2, false);
+});
+/* İşletme sahibi b, a'yı işe alır */
+function hire(a, b, bz) {
+  if (!bz || !present(a) || bz.emp.length >= ISLETME[bz.t].staff || bz.owner !== b.id) return;
+  leaveJob(a); a.job = {t: 'isci', w: bz.id}; bz.emp.push(a.id); a.worked = true; a.mood += 20;
+  changeRel(a, b, 20, false); remember(a, `${fn(b)} bana iş verdi.`);
+  news('💼', `${fn(a)}, ${nin(b.n)} ${ISLETME[bz.t].ad.toLocaleLowerCase('tr')} dükkânında işe başladı.`);
+}
+
+T('hava', () => 10, (a, b, c, say) => {
+  const L = {
+    gunesli: c.se === 2 ? [['Bu sıcak adamı bunaltıyor ya.', 'Akşam serinliği olmasa çekilmez valla.'], ['Güneş tepede, tarlada durulmuyor.', 'Bol su iç, güneş çarpmasın.']]
+      : c.se === 0 ? [['Kar durdu, güneş açtı çok şükür.', 'Ama ayaz var, sıkı giyin.']]
+      : c.se === 3 ? [['Güz güneşi bu, aldatmasın seni.', 'Akşamları üşütüyor artık.']]
+      : [['Hava ne güzel bugün, değil mi?', 'Maşallah, insanın içi açılıyor.'], ['Bahar geldi sonunda.', 'Ağaçlar çiçeğe durmuş, gördün mü?']],
+    bulutlu: [['Hava kapalı, yağacak gibi.', 'Yağsın, toprak susadı zaten.'], ['Bulutlar toplandı, akşama yağmur var.', 'Çamaşırları toplamak lazım o zaman.']],
+    yagmurlu: [['Bu yağmur hiç dinmeyecek mi?', 'Bereket bu, şikâyet etme.'], ['Yollar çamur oldu, ayakkabılar mahvoldu.', 'Asfalt olsa böyle olmazdı.']],
+    karli: [['Kar diz boyu olmuş, yollar kapanacak.', 'Sobanın başından kalkasım gelmiyor.'], ['Odunun var mı? Bu kış uzun sürecek.', 'Var var, yazdan hazırladık.']],
+    sisli: [['Sis yine her yeri kapladı, göz gözü görmüyor.', 'Dikkat et, yolu şaşırma.']],
+  };
+  const [x, y] = pick(L[c.hava] || L.gunesli);
+  say(0, x); say(1, y);
+  if (c.se === 3 && chance(.4)) say(0, pick(['Kış kapıda, hazırlık yapmak lazım.', 'Yapraklar döküldü, bir yaz daha bitti.']));
+  return () => changeRel(a, b, 1.5);
+});
+
+T('hasat', (a, b, c) => (c.se !== 0 && [a, b].some(p => p.job && ['ciftci', 'hayvanci'].includes(p.job.t))) ? 8 : 0, (a, b, c, say) => {
+  say(0, pick(['Bu yıl ekinler nasıl?', 'Tarlalar ne âlemde?', 'Hasat iyi olacak mı bu sene?']));
+  if (S.harvest < .8) { say(1, pick(['Kuraklık her şeyi kavurdu, ne edeceğiz bilmiyorum.', 'Yağmur yağmadı ki ekin olsun. Kötü bir yıl.'])); say(0, 'Allah yardımcımız olsun.'); }
+  else if (S.harvest > 1.2) { say(1, pick(['Maşallah, bu yıl çok bereketli!', 'Başaklar ağır, hasat bol olacak inşallah.'])); say(0, 'Hamdolsun, emeğinizin karşılığı.'); }
+  else say(1, pick(['İdare eder, ne çok iyi ne çok kötü.', 'Fena değil, gübre pahalı ama.', "Çalışıyoruz işte, gerisi Allah'tan."]));
+  return () => changeRel(a, b, 1.5);
+});
+
+T('is', (a, b) => age(b) >= 16 ? 8 : 0, (a, b, c, say) => {
+  say(0, pick([`İşler nasıl gidiyor ${hitap(a, b)}?`, 'İş güç nasıl?', 'Ne yapıyorsun bu aralar?']));
+  const j = b.job ? b.job.t : null;
+  let r = 'Bildiğin gibi, aynı tas aynı hamam.';
+  if (j === 'sahip') { const bz = bizById(b.job.w); r = bz && bz.profit < 0 ? 'Dükkân zarar ediyor, böyle giderse kapatacağım.' : 'Çok şükür, müşteri eksik olmuyor.'; }
+  else if (j === 'ciftci') r = c.se === 0 ? 'Kışın tarla işi yok, kahvede oturuyoruz.' : pick(['Sabah ezanından beri tarladayım, belim koptu.', 'Traktör yine bozuldu, elle uğraşıyoruz.']);
+  else if (j === 'hayvanci') r = c.se === 1 ? 'Koyunlar kuzuladı, başımı kaşıyacak vaktim yok.' : pick(['Hayvanlar iyi maşallah, süt bol.', 'Yem pahalandı, işimiz zor.']);
+  else if (j === 'ogretmen') r = pick(['Çocuklar çok tatlı ama yaramaz, sesim kısıldı.', 'Okul işte, ödev okumaktan gözüm şaştı.']);
+  else if (j === 'isci') r = pick(['Patron iyi adam ama maaş az.', 'Çalışıyoruz, ay sonunu getiriyoruz.']);
+  else if (j === 'ev') r = pick(['Ev işi bitmiyor ki, sabahtan akşama.', 'Ekmek yaptım, çamaşır yıkadım, bir de akşam yemeği var.']);
+  else if (j === 'emekli') r = 'Emekliyiz, kahve köşesinde oturuyoruz.';
+  else if (j === 'issiz') r = 'İş mi? Ne işi... Boştayım.';
+  if (b.school) r = pick(['Okul var işte, matematikten kalacağım galiba.', 'Derslerim iyi, öğretmen beni seviyor.']);
+  say(1, r);
+  const bz = a.job && a.job.t === 'sahip' ? bizById(a.job.w) : null;
+  if (j === 'issiz' && bz && bz.emp.length < ISLETME[bz.t].staff && !controlled(b)) {
+    say(0, 'Benim dükkânda çalışır mısın? Bir eleman lazım.'); say(1, 'Olur! Ne zaman başlayayım?');
+    return () => hire(b, a, bz);
+  }
+  return () => changeRel(a, b, 1);
+});
+
+T('hedef', a => age(a) >= 17 ? 6 : 0, (a, b, c, say) => {
+  switch (a.goal) {
+    case 'is': {
+      const ts = Object.keys(ISLETME).filter(t => !S.biz.some(x => x.t === t));
+      const t = ts.length ? pick(ts) : 'bakkal';
+      say(0, `Köye bir ${ISLETME[t].ad.toLocaleLowerCase('tr')} lazım, açsam mı diyorum.`);
+      if (has(b, 'hirsli') || has(b, 'kurnaz') || relV(b, a) > 30) { say(1, 'Aç tabii! Bu köyde iş yapan kazanır.'); return () => { a.mood += 4; changeRel(a, b, 2, false); }; }
+      say(1, 'Para nerede? Batarsın sonra, dikkat et.'); return () => changeRel(a, b, -1, false);
+    }
+    case 'zengin': say(0, pick(['Bir gün çok zengin olacağım, görürsün.', 'Para biriktiriyorum, bir araba alacağım inşallah.']));
+      say(1, has(b, 'cimri') ? 'Para kazanmak kolay, tutmak zor.' : pick(['Allah bereket versin.', 'Hayırlısı olsun, çalışan kazanır.'])); return () => changeRel(a, b, 1);
+    case 'muhtar': say(0, pick(['Ben muhtar olsam bu köyü baştan yaratırdım.', 'Seçimde aday olacağım, oyun bende mi?']));
+      if (relV(b, a) > 25) { say(1, 'Tabii ki, benim oyum sende!'); return () => { changeRel(b, a, 4, false); a.rep += .5; a.mood += 3; }; }
+      say(1, 'Bakarız, daha seçime çok var.'); return null;
+    case 'saygin': say(0, pick(['İnsan dediğin önce adam olmalı, değil mi?', 'Köyde herkesin derdine koşmak lazım.']));
+      say(1, pick(['Doğru söylüyorsun.', 'Senin gibisi az bulunur.'])); return () => { changeRel(b, a, 3, false); a.rep += .5; };
+    default: say(0, a.sp == null ? pick(['Artık evlenip bir yuva kurmak istiyorum.', 'Bir kısmet çıksa, düğünü hemen yaparım.']) : pick(['Bir çocuğumuz olsa ne güzel olur.', 'Çoluk çocuğa karışmak istiyorum artık.']));
+      say(1, pick(['Allah hayırlısını versin.', 'İnşallah, kısmet.'])); return () => changeRel(a, b, 1.5);
+  }
+});
+
+T('dedikodu', (a, b, c) => c.third.length && age(a) >= 14 ? (has(a, 'dedikoducu') ? 14 : 2) : 0, (a, b, c, say) => {
+  const t = c.third.slice().sort((x, y) => relV(a, x) - relV(a, y))[0];
+  const romOf = Object.keys(t.rom).map(P).filter(q => q && t.rom[q.id] >= 40 && isAlive(q) && q !== a)[0];
+  const kusOf = Object.keys(t.kus).map(P).filter(q => isAlive(q) && q !== a)[0];
+  let line;
+  if (t.debt > 30000) line = `${nin(t.n)} borçları başından aşmış diyorlar, duydun mu?`;
+  else if (romOf && t.sp == null) line = `${t.n} ile ${romOf.n} arasında bir şeyler var, ben gördüm!`;
+  else if (kusOf) line = `${t.n} ile ${kusOf.n} küsmüş, birbirlerinin yüzüne bakmıyorlar.`;
+  else if (has(t, 'tembel')) line = `${t.n} hiç çalışmıyor, bütün gün yan gelip yatıyor.`;
+  else if (t.job && t.job.t === 'issiz') line = `${t.n} hâlâ iş bulamamış, kim bilir ne yapacak.`;
+  else line = pick([`${t.n} kendini bir şey sanıyor ama...`, `${nin(t.n)} ne iş çevirdiğini çok merak ediyorum.`, `${t.n} geçen gün bana selam bile vermedi.`]);
+  say(0, 'Aramızda kalsın ama... ' + line);
+  if (relV(b, t) > 40 || isKin(b, t) || b.sp === t.id) { say(1, `${t.n} hakkında öyle konuşma, o benim ${isKin(b, t) || b.sp === t.id ? 'ailem' : 'dostum'}!`); return () => changeRel(b, a, -8, false); }
+  if (has(b, 'dindar') || has(b, 'sakin')) { say(1, pick(['Gıybet etme, günah.', 'Bana ne başkasından, beni karıştırma.'])); return () => changeRel(b, a, -2, false); }
+  say(1, pick(['Vallahi mi? Hiç beklemezdim.', 'Yok artık! Ben de bir şeyler sezmiştim zaten.', 'Hıh, ben sana demiştim!']));
+  return () => {
+    t.rep -= rnd(1.5, 4); changeRel(b, t, -5, false); changeRel(a, b, 2);
+    if (chance(.25)) { changeRel(t, a, -25); setKus(t, a, true); remember(t, `${fn(a)} arkamdan dedikodu yapmış!`);
+      if (newsQuota('dedikodu', 2)) news('🗣️', `${nin(fn(a))}, ${fn(t)} hakkında dedikodu yaptığı ortaya çıktı. İkisi küstü.`); }
+  };
+});
+
+T('flort', (a, b) => canRomance(a, b) && !controlled(a) ? (((a.rom[b.id] || 0) >= 15 || chem(a, b) > .6) ? 12 : 2) : 0, (a, b, c, say) => {
+  const ha = hitap(a, b);
+  say(0, a.g === 'E' ? pick([`Bugün çok güzel görünüyorsun ${ha}.`, 'Çeşmeye mi gidiyorsun? Testiyi ben taşıyayım.', `Senin gülüşün bu köye bahar getiriyor ${ha}.`, 'Akşam meydana gelecek misin?'])
+    : pick(['Geçen gün tarlada çok çalışıyordun, maşallah.', 'Bu gömlek sana çok yakışmış.', `Sen hiç değişmiyorsun ${ha}.`, 'Akşam meydanda olacak mısın?']));
+  if ((b.rom[a.id] || 0) >= 25 || chem(a, b) > .7) {
+    say(1, pick(['Ay, utandırma beni...', 'Sen de hiç fena değilsin hani.', 'Hıh, dilin ne tatlı bugün.', 'Belki gelirim... Bakarız.']));
+    return () => { a.rom[b.id] = clamp((a.rom[b.id] || 0) + rnd(5, 10), 0, 100); b.rom[a.id] = clamp((b.rom[a.id] || 0) + rnd(5, 10), 0, 100); changeRel(a, b, 3); };
+  }
+  say(1, pick(['Hayırdır, ne bu iltifatlar?', 'Ne alaka şimdi?', 'Tamam, sağ ol... Ben gideyim.']));
+  return () => { a.rom[b.id] = clamp((a.rom[b.id] || 0) - 3, 0, 100); b.rom[a.id] = clamp((b.rom[a.id] || 0) + rnd(0, 3), 0, 100); };
+});
+
+T('itiraf', (a, b) => canRomance(a, b) && (a.rom[b.id] || 0) >= 55 && !courtOf(a.id) && !controlled(a) ? 20 : 0, (a, b, c, say) => {
+  say(0, pick([`${ucf(hitap(a, b))}, sana bir şey söyleyeceğim ama kızma... Uzun zamandır aklım hep sende.`, 'Bunu söylemek çok zor ama... Ben sana âşık oldum.']));
+  if ((b.rom[a.id] || 0) >= 45) {
+    say(1, pick(['Ben de seni düşünüyordum... Ama ailem ne der?', 'Gerçekten mi? Ben de... Ben de seni seviyorum.']));
+    if (a.g === 'E') say(0, 'O zaman ailemle gelip seni isteyeceğim!');
+    return () => {
+      a.rom[b.id] = clamp((a.rom[b.id] || 0) + 15, 0, 100); b.rom[a.id] = clamp((b.rom[a.id] || 0) + 15, 0, 100);
+      changeRel(a, b, 10); a.mood += 20; b.mood += 15;
+      remember(a, `${ye(fn(b))} aşkımı itiraf ettim, o da beni seviyormuş!`); remember(b, `${fn(a)} bana aşkını itiraf etti.`);
+      const g = a.g === 'E' ? a : b, w = a.g === 'E' ? b : a;
+      if (!controlled(g) && suitable(g, w) && (g.askerDone || age(g) >= 27)) startCourt(g, w, false);
+      if (newsQuota('ask', 1)) news('💕', `Köyde fısıltılar: ${a.n} ile ${b.n} birbirine gönül vermiş!`);
+    };
+  }
+  say(1, pick(['Bunu duymamış olayım. Lütfen bir daha söyleme.', 'Özür dilerim ama ben seni öyle görmüyorum.']));
+  return () => { a.rom[b.id] = clamp((a.rom[b.id] || 0) - 20, 0, 100); a.mood -= 15; remember(a, `${fn(b)} aşkımı geri çevirdi.`); };
+});
+
+T('nisan', (a, b) => courtOf(b.id) && courtOf(b.id).st !== 'isteme' && courtOf(b.id) !== courtOf(a.id) ? 14 : 0, (a, b, c, say) => {
+  const ct = courtOf(b.id), o = P(ct.g === b.id ? ct.b : ct.g);
+  say(0, pick([`Hayırlı olsun, ${o ? o.n + ' ile ' : ''}nişanlanmışsın!`, 'Düğün ne zaman? Bizi de çağıracaksın değil mi?']));
+  say(1, pick(['Sağ ol! Kına gecesinde seni de bekliyorum.', 'İnşallah yakında, hazırlıklar sürüyor.', 'Hepinizi bekliyoruz, davul zurna hazır!']));
+  return () => changeRel(a, b, 3);
+});
+
+T('asker', (a, b) => b.g === 'E' && !b.askerDone && age(b) >= 18 && age(a) >= 16 ? 8 : 0, (a, b, c, say) => {
+  say(0, pick([`Askerlik ne zaman ${hitap(a, b)}?`, 'Celbin geldi mi?']));
+  say(1, pick(['Yakında gidiyorum herhalde, celp bekliyorum.', 'Bilmiyorum, belki bu yıl. Biraz korkuyorum açıkçası.']));
+  say(0, a.askerDone && a.g === 'E' ? pick(['Korkma, ben de gittim. Adam olup dönersin!', 'Askerde nöbet tutarken köyü özlersin, ama geçer gider.']) : 'Allah kolaylık versin, sağ salim git gel.');
+  return () => changeRel(a, b, 2);
+});
+
+T('futbol', (a, b) => a.g === 'E' && b.g === 'E' && age(a) >= 12 && age(b) >= 12 && age(a) < 55 ? 9 : 0, (a, b, c, say) => {
+  say(0, 'Dün akşam maçı izledin mi?');
+  if (a.takim === b.takim) { say(1, `İzledim tabii! Bu sene şampiyon ${a.takim}!`); say(0, 'Hakem bile bizi durduramaz!'); return () => changeRel(a, b, 3); }
+  say(1, `İzledim. Sizin ${a.takim} sahada yürüyordu resmen.`);
+  say(0, `Hakem bizi yaktı! Sizin ${b.takim} ${ek2(b.takim) === 'a' ? 'da' : 'de'} geçen hafta rezil oldu ama.`);
+  if (has(a, 'sinirli') && has(b, 'sinirli')) { say(1, 'Sen benim takımıma laf mı ediyorsun?!'); return () => changeRel(a, b, -4); }
+  say(1, 'Hahaha, neyse neyse, rövanşta görüşürüz.'); return () => changeRel(a, b, 2);
+});
+
+T('sehir', a => age(a) >= 17 && age(a) < 30 ? 6 : 0, (a, b, c, say) => {
+  say(0, pick(['Şehre gidip iş bulsam mı diyorum, burada gelecek yok.', 'İnternet bile doğru düzgün çekmiyor bu köyde.', "Arkadaşlar İstanbul'a gitmiş, iyi kazanıyorlarmış."]));
+  if (age(b) >= 45) { say(1, 'Toprağını bırakma evlat, şehir insanı yutar.'); return () => changeRel(a, b, 1); }
+  say(1, pick(['Ben de düşünüyorum ama ailemi bırakamam.', 'Bence kal, köy güzel. Huzur var burada.', 'Git bence, ben de gelirim belki.']));
+  return () => changeRel(a, b, 2);
+});
+
+T('aile', b0 => 6, (a, b, c, say) => {
+  const f = isAlive(P(b.f)) ? P(b.f) : null, kids = children(b).filter(isAlive);
+  if (kids.length && chance(.5)) { const k = pick(kids); say(0, `${k.n} nasıl? Büyüdü mü maşallah?`); say(1, age(k) < 3 ? 'Maşallah, emeklemeye başladı, eve sığmıyor!' : 'Büyüdü, gözümüzün önünde kocaman oldu.'); }
+  else if (b.sp != null && P(b.sp)) { const s = P(b.sp); say(0, `${s.n} nasıl? Selamımı söyle.`); say(1, relV(b, s) > 20 ? 'Sağ ol, o da iyi, seni sorar hep.' : 'İyi... İyi işte. Sorma.'); }
+  else if (f && f !== a) { say(0, `${ucf(f.n)} amca nasıl? Elini öperim.`); say(1, 'Sağ ol, iyi. Kahvede hep seni anlatıyor.'); }
+  else { say(0, 'Ailen nasıl, bir haber var mı?'); say(1, pick(['İyiler, şükür. Telefonda konuştuk dün.', 'Annemi özledim, bayramda gideceğim.'])); }
+  return () => changeRel(a, b, 2);
+});
+
+T('bayram', () => bayramToday(curDay()) ? 40 : 0, (a, b, c, say) => {
+  say(0, `Bayramın mübarek olsun ${hitap(a, b)}!`);
+  if (age(b) >= age(a) + 15) { say(0, 'Elini öpeyim.'); say(1, 'Var ol evladım, Allah razı olsun. Al bakalım, bu da bayram harçlığın.'); return () => { changeRel(a, b, 5); if (b.money > 500) { b.money -= 50; a.money += 50; } }; }
+  say(1, pick(['Seninki de mübarek olsun! Bize de bekleriz.', 'Senin de bayramın kutlu olsun, gel tatlı ye.']));
+  return () => changeRel(a, b, 5);
+});
+
+T('olay', (a, b, c) => c.news.length && age(a) >= 12 ? 12 : 0, (a, b, c, say) => {
+  const n = pick(c.news);
+  say(0, 'Duydun mu? ' + n.s.replace(/!$/, '.'));
+  const RS = {'💒': ['Duymaz olur muyum, düğündeydim! Halayda ayaklarım koptu.', 'Allah mesut etsin, çok yakıştılar.'], '🕯️': ['Allah rahmet eylesin, mekânı cennet olsun.', 'Çok üzüldüm, iyi insandı.'],
+    '🤲': ['Allah kabul etsin.', 'Mekânı cennet olsun.'], '👶': ['Allah analı babalı büyütsün!', 'Hayırlı olsun, maşallah.'], '👊': ['Ayıp ya, koca adamlar kavga ediyor!', 'Duydum, köyün huzuru kalmadı.'],
+    '💍': ['Hayırlı olsun, yakışırlar.', 'Bakalım düğün ne zaman.'], '🏛️': ['Bakalım bu sefer ne yapacak.', 'Hayırlısı olsun.'], '🎖️': ['Allah sağ salim döndürsün.', 'Vatan sağ olsun.'],
+    '🎉': ['Hoş geldi, sefa geldi!'], '📉': ['Vah vah, yazık oldu.', 'Rekabet zor iş.'], '🙅': ['Vah, kırılmıştır şimdi.', 'Kısmet değilmiş demek.'], '💔': ['Çok yazık.', 'Ne oldu ki acaba?'],
+    '🗣️': ['Bu köyde laf taşıyan çok.', 'Bana ne, ben karışmam.'], '💕': ['Ben zaten biliyordum!', 'Allah tamamına erdirsin.'], '🏃': ['Tövbe tövbe, aileleri ne yapacak şimdi?']};
+  say(1, pick(RS[n.i] || ['Duydum, duydum. Köyde başka konu yok zaten.', 'Hadi ya, hiç haberim yoktu!']));
+  return () => changeRel(a, b, 1.5);
+});
+
+T('muhtar', (a, b) => age(a) < 16 ? 0 : S.muhtar === b.id ? 12 : (P(S.muhtar) && S.muhtar !== a.id && isAlive(P(S.muhtar)) && age(a) >= 18 ? 3 : 0), (a, b, c, say) => {
+  const m = P(S.muhtar);
+  if (b === m) {
+    const need = Object.keys(PROJE).find(projeUygun);
+    say(0, need ? `Muhtarım, köye bir ${PROJE[need].ad.toLocaleLowerCase('tr')} lazım, ne zaman yapılacak?` : 'Muhtarım, yolların çukurları ne olacak?');
+    say(1, S.treasury > PROJE[need || 'cesme'].cost ? 'Hazinede para var, yakında başlıyoruz inşallah.' : 'Bütçe kısıtlı, ama halledeceğiz merak etme.');
+    return () => changeRel(a, b, relV(a, b) > 0 ? 2 : -1, false);
+  }
+  if (relV(a, m) < 0) { say(0, `Muhtar ${m.n} ne iş yapıyor ki? Köy yerinde sayıyor.`); say(1, relV(b, m) > 20 ? 'Öyle deme, elinden geleni yapıyor.' : 'Haklısın, seçimde görürüz.'); return () => changeRel(b, m, relV(b, m) > 20 ? 0 : -2, false); }
+  say(0, `Muhtarımız ${m.n} iyi iş çıkarıyor bence.`); say(1, pick(['Evet, Allah razı olsun.', 'Eh işte, idare eder.'])); return null;
+});
+
+T('oy', a => S.secim && S.secim.cands.includes(a.id) ? 25 : 0, (a, b, c, say) => {
+  say(0, pick([`Seçimde oyunu bana ver ${hitap(a, b)}, köye yol su getireceğim!`, 'Muhtar olursam ilk iş köye çeşme yaptıracağım. Oyun bende mi?']));
+  if (!S.secim || !S.secim.cands.includes(a.id)) { say(1, 'Sen aday mısın ki? Önce adaylığını koy bakalım.'); return null; }
+  if (relV(b, a) + rnd(-20, 20) + (has(a, 'kurnaz') ? 10 : 0) > 15) { say(1, 'Merak etme, oyum sende!'); return () => { changeRel(b, a, 5, false); if (S.secim) S.secim.camp[a.id] = (S.secim.camp[a.id] || 0) + 1.5; }; }
+  say(1, 'Sandıkta görürüz bakalım...'); return () => { if (S.secim) S.secim.camp[a.id] = (S.secim.camp[a.id] || 0) + .3; };
+});
+
+T('tavla', (a, b, c) => c.pk === 'kahve' && age(a) >= 16 && age(b) >= 16 ? 14 : 0, (a, b, c, say) => {
+  say(0, pick(['Bir el tavla atalım mı?', 'Hadi bir okey dönelim, çaylar kaybedenden!']));
+  say(1, 'At bakalım, yenersem çaylar senden!');
+  const aw = chance(.5 + (has(a, 'kurnaz') ? .1 : 0) - (has(b, 'kurnaz') ? .1 : 0)), w = aw ? a : b, l = aw ? b : a, wi = aw ? 0 : 1;
+  say(wi, pick(['Mars oldun! Çaylar senden.', 'Düşeş! Bitti oyun, kalk kalk.', 'Bu zarlar benimle konuşuyor!']));
+  if (has(l, 'sinirli')) { say(1 - wi, 'Zarlar hileli bu, bir daha oynamam seninle!'); return () => { changeRel(l, w, -4, false); l.money -= 20; }; }
+  say(1 - wi, pick(['Tamam tamam, rövanş istiyorum!', 'Şans işte... Ocakçı, iki çay!'])); return () => { changeRel(a, b, 3); l.money -= 20; };
+});
+
+T('cay', (a, b, c) => (c.pk === 'kahve' || c.pk === 'meydan') && age(a) >= 16 ? (has(a, 'comert') ? 10 : 4) : 0, (a, b, c, say) => {
+  say(0, pick(['Gel bir çay içelim, benden.', 'Otur şöyle, iki çay söyleyeyim.']));
+  say(1, pick(['Sağ ol, eksik olma.', 'Hayır, bu sefer benden!', 'Olur, bir çaya hayır denmez.']));
+  return () => { a.money -= 10; changeRel(a, b, 3); changeRel(b, a, 2, false); };
+});
+
+T('dindar', a => has(a, 'dindar') && age(a) >= 14 ? (curDay() % 7 === 4 ? 14 : 4) : 0, (a, b, c, say) => {
+  if (curDay() % 7 === 4 && a.g === 'E' && b.g === 'E') { say(0, 'Cumaya gelecek misin?'); say(1, has(b, 'dindar') ? 'İnşallah, beraber gideriz.' : 'Bakarız, işim var biraz.'); return () => changeRel(a, b, has(b, 'dindar') ? 3 : 0); }
+  say(0, pick(['Allah kimseyi darda bırakmasın.', 'Şükretmek lazım, halimize şükür.'])); say(1, pick(['Amin.', 'Doğru söylüyorsun.'])); return () => changeRel(a, b, 2);
+});
+
+T('davet', (a, b) => relV(a, b) > 30 && a.h >= 0 && a.h !== b.h && hourNow() < 18 ? 5 : 0, (a, b, c, say) => {
+  const kim = a.sp != null ? (a.g === 'E' ? 'hanım' : 'ben') : (isAlive(P(a.m)) && P(a.m).h === a.h ? 'annem' : 'ben');
+  say(0, kim === 'ben' ? 'Akşam bize gel, ben menemen yaparım.' : `Akşam bize gel, ${kim} mantı yapıyor.`);
+  if (relV(b, a) > 10 && chance(.75)) {
+    say(1, 'Vallahi gelirim, ellerine sağlık şimdiden.');
+    return () => { changeRel(a, b, 4); if (hourNow() < 19) { addSched(a, 19.2, homeDest(a)); addSched(a, 21.6, homeDest(a)); addSched(b, 19.5, dIn(M.houses[a.h])); addSched(b, 21.5, homeDest(b)); } };
+  }
+  say(1, 'Gelemem bu akşam, başka sefere inşallah.'); return () => changeRel(a, b, 1);
+});
+
+const FIKRA = ['Temel\'e sormuşlar: "En çok hangi mevsimi seversin?" "Kurban Bayramı\'nı!" demiş.',
+  'Nasreddin Hoca eşeğine ters binmiş. "Hocam, neden ters bindin?" demişler. "Ben ters binmedim, eşek ters duruyor!"',
+  'Temel doktora gitmiş: "Nereme dokunsam ağrıyor." Doktor bakmış: "Parmağın kırılmış Temel!"',
+  'Dursun\'a sormuşlar: "Neden hep yorgunsun?" "Rüyamda bütün gece tarla sürüyorum!" demiş.',
+  'Hoca komşudan kazan ödünç almış, içine tencere koyup geri vermiş: "Kazanınız doğurdu!"',
+  'Temel ile Dursun balığa gitmişler. Dursun: "Yeri işaretle, yarın yine gelelim." Temel kayığa çarpı çizmiş.'];
+T('saka', a => has(a, 'neseli') ? 12 : 4, (a, b, c, say) => {
+  say(0, pick(FIKRA));
+  if (has(b, 'sinirli') && chance(.5)) { say(1, 'Hiç komik değil...'); return () => changeRel(a, b, -1, false); }
+  say(1, pick(['Hahaha! Sen yok musun sen!', 'Ahaha, karnım ağrıdı gülmekten!', 'Bunu nereden buluyorsun ya, hahaha!']));
+  return () => { changeRel(a, b, 3); a.mood += 2; b.mood += 3; };
+});
+
+T('lafsok', (a, b) => !controlled(a) && relV(a, b) < -25 && age(a) >= 14 ? (has(a, 'sinirli') ? 16 : 6) : 0, (a, b, c, say) => {
+  const mem = (a.mem || []).find(m => m.t.includes(b.n));
+  say(0, mem ? 'Geçen gün yaptığını unutmadım, haberin olsun!' : pick([`Senin gibi ${has(b, 'tembel') ? 'tembel' : 'kendini beğenmiş'} birini görmedim!`, 'Bana yan yan bakma, derdin ne senin?', 'Köyde senin yüzünden huzur kalmadı.']));
+  if (has(b, 'sakin') || has(b, 'dindar')) { say(1, pick(["Tamam, büyütme. Allah'a havale ediyorum.", 'Seninle tartışacak değilim.'])); return () => changeRel(a, b, -3); }
+  say(1, pick(['Ne dedin sen?! Ağzından çıkanı kulağın duysun!', 'Asıl sen kendine bak!', 'Bana bak, sabrımı zorlama!']));
+  if (has(a, 'sinirli') || has(b, 'sinirli') || chance(.3)) { say(0, 'Gel de göstereyim sana!'); return () => { kavga(a, b); remember(a, `${yle(fn(b))} kavga ettim.`); remember(b, `${yle(fn(a))} kavga ettik.`); }; }
+  say(0, 'Hıh, seninle mi uğraşacağım!'); return () => { changeRel(a, b, -8); if (!a.kus[b.id] && chance(.5)) setKus(a, b, true); };
+});
+
+T('kavga', () => 0, (a, b, c, say) => {
+  say(0, pick(['Sen benim hakkımda ne konuşuyormuşsun?!', 'Bugün hesabını soracağım senden!']));
+  say(1, pick(['Ne diyorsun sen, aklını mı oynattın?', 'Çekil git önümden!']));
+  say(0, 'Al sana!');
+  return () => { kavga(a, b); remember(a, `${yle(fn(b))} kavga ettim.`); remember(b, `${fn(a)} bana saldırdı!`); };
+});
+
+T('baris', (a, b) => a.kus[b.id] && !controlled(a) ? 8 : 0, (a, b, c, say) => {
+  say(0, pick([`Bak ${hitap(a, b)}, bu küslük bize yakışmıyor. Gel barışalım.`, 'Kırgınlığı bırakalım artık, ne dersin?']));
+  const pr = .45 + (has(b, 'sakin') ? .2 : 0) + (has(b, 'dindar') ? .15 : 0) - (has(b, 'sinirli') ? .2 : 0) + relV(b, a) / 200 + (bayramToday(curDay()) ? .3 : 0);
+  if (!controlled(b) && chance(pr)) { say(1, pick(['Haklısın, kusura bakma. Barışalım.', 'Tamam, geçmiş geçmişte kaldı.'])); say(0, 'Gel sarılalım o zaman!');
+    return () => { baris(a, b); remember(a, `${yle(fn(b))} barıştık.`); remember(b, `${yle(fn(a))} barıştık.`); }; }
+  say(1, pick(['Daha yaptığını unutmadım!', 'Bırak beni, konuşacak bir şey yok.'])); return () => changeRel(a, b, -2);
+});
+
+T('yardim', (a, b) => a.money < 1500 && age(a) >= 18 && relV(a, b) > 25 ? 8 : 0, (a, b, c, say) => {
+  say(0, `${ucf(hitap(a, b))}, bana biraz borç verebilir misin? Ay sonu öderim.`);
+  if (b.money > 8000 && (has(b, 'comert') || relV(b, a) > 35) && !has(b, 'cimri') && !controlled(b)) {
+    say(1, 'Tabii, al şunu. Acelesi yok.');
+    return () => { b.money -= 2000; a.money += 2000; changeRel(a, b, 10, false); remember(a, `${fn(b)} bana 2.000 ₺ borç verdi.`); };
+  }
+  say(1, pick(['Valla ben de sıkışığım bu ara.', 'Kusura bakma, param yok.'])); return () => changeRel(a, b, -3, false);
+});
+
+T('saglik', a => a.hl < 60 || age(a) > 55 ? 6 : 0, (a, b, c, say) => {
+  say(0, pick(['Belim yine tuttu, doktora gitmek lazım.', 'Dizlerim ağrıyor, yaşlılık işte.', 'Bir öksürük tuttu, geçmiyor.']));
+  say(1, S.proj.saglik.st === 2 ? 'Geçmiş olsun, sağlık ocağına uğra hemen.' : 'Geçmiş olsun. Köyde bir sağlık ocağı olsa ne iyi olurdu.');
+  return () => changeRel(a, b, 2);
+});
+
+T('baski', (a, b) => age(a) >= 45 && age(b) >= 23 && b.sp == null && !courtOf(b.id) ? 10 : 0, (a, b, c, say) => {
+  say(0, pick([`Ne zaman evleneceksin artık ${hitap(a, b)}? Yaş geçiyor!`, 'Senin düğününde oynamadan ölmeyeyim bari.']));
+  say(1, pick(['Kısmet, kısmet...', 'Hayırlısı olsun, acele etmiyorum.', 'Bir bulsam, hemen!']));
+  return () => { b.mood -= 2; };
+});
+
+T('ev', (a, b, c) => c.home ? 30 : 0, (a, b, c, say) => {
+  if (c.hr >= 18.5 && c.hr < 21) { say(0, pick(['Sofra hazır, buyurun yemeğe!', 'Hadi gelin, çorba soğumasın.'])); say(1, pick(['Ellerine sağlık, mis gibi kokuyor.', 'Geldim geldim!'])); return () => changeRel(a, b, 2); }
+  if (a.sp === b.id) { say(0, pick(['Bugün nasıl geçti?', 'Yoruldun mu bugün?'])); say(1, b.hap < 40 ? 'Hiç sorma, berbat bir gündü.' : 'İyiydi, sen nasılsın?'); return () => changeRel(a, b, relV(a, b) > 0 ? 2 : -1); }
+  if (b.f === a.id || b.m === a.id) { say(0, pick([`${ucf(hitap(a, b))}, bugün ne yaptın bakalım?`, 'Erken yat, sabah işimiz var.'])); say(1, `Tamam ${hitap(b, a)}.`); return () => changeRel(a, b, 2); }
+  say(0, 'Çay demledim, içer misin?'); say(1, 'Olur, koy bir bardak.'); return () => changeRel(a, b, 2);
+});
+
+T('oyun', (a, b) => age(a) < 14 && age(b) < 14 ? 30 : 0, (a, b, c, say) => {
+  say(0, pick(['Saklambaç oynayalım mı?', 'Hadi top oynayalım!', 'Bak ne buldum, kurbağa!']));
+  say(1, pick(['Olur! Sen ebesin!', 'Yaşasın, ben kaleye geçiyorum!', 'Iyy, at onu!']));
+  return () => changeRel(a, b, 3);
+});
+T('cocuk', (a, b) => age(a) >= 18 && age(b) < 14 && age(b) >= 5 ? 25 : 0, (a, b, c, say) => {
+  say(0, pick([`Okul nasıl gidiyor ${hitap(a, b)}?`, 'Büyümüşsün maşallah, kaç yaşına girdin?', 'Annenin sözünü dinliyor musun bakalım?']));
+  say(1, pick([`İyi gidiyor ${hitap(b, a)}!`, 'Dinliyorum, söz!', 'Öğretmen bana aferin dedi!']));
+  return () => changeRel(a, b, 2);
+});
+
+const KIDT = ['oyun', 'cocuk', 'hava', 'saka', 'bayram', 'ev'];
+const NEGT = ['dedikodu', 'lafsok', 'flort', 'itiraf', 'oy', 'yardim', 'baris', 'kavga'];
+function pickTopic(a, b, c, exclude) {
+  const kid = age(a) < 14 || age(b) < 14, opts = []; let tot = 0;
+  for (const k in TOPIC) {
+    if (k === exclude || (kid && !KIDT.includes(k)) || (controlled(a) && NEGT.includes(k))) continue;
+    const w = TOPIC[k].w(a, b, c); if (w > 0) { opts.push([k, w]); tot += w; }
+  }
+  if (!opts.length) return 'hava';
+  let x = Math.random() * tot; for (const [k, w] of opts) { x -= w; if (x <= 0) return k; }
+  return opts[0][0];
+}
+function buildConv(a, b, forced) {
+  const c = convCtx(a, b), lines = [], say = (w, t) => lines.push([w, t]);
+  let fx = null, tk = forced || null;
+  if (a.kus[b.id] && !['baris', 'kavga', 'lafsok'].includes(forced)) {
+    if (TOPIC.baris.w(a, b, c) > 0 && chance(.3)) { tk = 'baris'; fx = TOPIC.baris.run(a, b, c, say); }
+    else { say(0, pick(['Hıh.', '(Yüzünü çevirdi)', '...'])); say(1, pick(['(Selam vermeden geçti)', 'Hıh, bana ne.', '...'])); }
+    return {lines, fx, c, tk};
+  }
+  if (c.walking && !forced && chance(.55)) { greet(a, b, c, say, true); return {lines, fx: () => changeRel(a, b, 1), c, tk: 'selam'}; }
+  if (!c.home && !['kavga', 'lafsok'].includes(forced)) greet(a, b, c, say);
+  if (!tk) tk = pickTopic(a, b, c);
+  fx = TOPIC[tk].run(a, b, c, say);
+  if (!forced && !c.dert && chance(.3)) {
+    const tk2 = pickTopic(a, b, c, tk);
+    if (['hava', 'is', 'aile', 'futbol', 'saka', 'olay', 'hasat', 'cay', 'hedef'].includes(tk2)) { const f1 = fx, f2 = TOPIC[tk2].run(a, b, c, say); fx = () => { f1 && f1(); f2 && f2(); }; }
+  }
+  if (!c.home && !['kavga', 'lafsok'].includes(tk) && chance(.7)) farewell(a, b, c, say);
+  return {lines, fx, c, tk};
+}
+const lineDur = t => 2.4 + t.length * .055; // oyun dakikası (1x hızda ≈ saniye)
+
+/* Program dışı bir hedef ekle (ör. yemeğe davet) */
+function addSched(p, h, dest) {
+  const ag = R.ag[p.id]; if (!ag) return;
+  ag.sched.push([h, dest]); ag.sched.sort((x, y) => x[0] - y[0]);
+  const hr = hourNow(); ag.si = ag.sched.findIndex(e => e[0] > hr); if (ag.si < 0) ag.si = ag.sched.length;
+}
+
+function startConv(a, b, forced) {
+  if (!forced && age(a) < 14 && age(b) >= 18) [a, b] = [b, a]; // büyük olan söze başlar
+  const A = agentOf(a), B = agentOf(b);
+  const cv = buildConv(a, b, forced);
+  if (!cv.lines.length) return;
+  const conv = {id: ++R.convId, a: a.id, b: b.id, lines: cv.lines, fx: cv.fx, i: 0, t: lineDur(cv.lines[0][1]), inside: cv.c.inside, pl: cv.c.pl};
+  for (const ag of [A, B]) { ag.talk = conv; if (ag.pi < ag.path.length) { ag.resume = ag.path.slice(ag.pi); ag.path = []; ag.pi = 0; } }
+  // Açık alanda dinleyen, konuşanın yanına gelir
+  if (!A.inside && !B.inside && !A.resume && !B.resume && Math.hypot(A.x - B.x, A.y - B.y) > 16) { B.path = [{x: A.x + (B.x < A.x ? -15 : 15), y: A.y + 2}]; B.pi = 0; }
+  R.convs.push(conv);
+  const log = {d: curDay(), h: hourNow(), a: a.id, b: b.id, an: fn(a), bn: fn(b), pl: placeName(cv.c.pl, a), l: [cv.lines[0].slice()]};
+  conv.log = log; S.chat.push(log); if (S.chat.length > 80) S.chat.shift();
+  R.pcd[a.id < b.id ? a.id + '-' + b.id : b.id + '-' + a.id] = S.min + 120;
+}
+function updateConvs(gm) {
+  for (const cv of R.convs.slice()) {
+    if (!present(S.people[cv.a]) || !present(S.people[cv.b]) || !R.ag[cv.a] || !R.ag[cv.b]) { endConv(cv, false); continue; }
+    cv.t -= gm;
+    while (cv.t <= 0) {
+      cv.i++;
+      if (cv.i >= cv.lines.length) { endConv(cv, true); break; }
+      cv.t += lineDur(cv.lines[cv.i][1]); cv.log.l.push(cv.lines[cv.i].slice());
+    }
+  }
+}
+function endConv(cv, ok) {
+  R.convs = R.convs.filter(x => x !== cv);
+  if (ok && cv.fx) { try { cv.fx(); } catch (e) { console.error('sohbet etkisi', e); } }
+  for (const id of [cv.a, cv.b]) {
+    const ag = R.ag[id]; if (!ag || ag.talk !== cv) continue;
+    ag.talk = null; R.cd[id] = S.min + ri(8, 25);
+    if (ag.pend && !ag.chase && !(ag.override > S.min)) { goTo(ag, ag.pend); ag.pend = null; ag.resume = null; }
+    else if (ag.resume) { ag.path = ag.resume; ag.pi = 0; ag.resume = null; }
+  }
+}
+
+/* Karşılaşmalar: her oyun dakikası kim kiminle sohbet edecek? */
+function checkEncounters() {
+  const hr = hourNow(); if (hr < 6.5 || hr >= 23) return;
+  const ps = presentList().filter(p => { const ag = R.ag[p.id]; return ag && !ag.talk && !ag.ring && !ag.chase && age(p) >= 4 && (R.cd[p.id] || 0) <= S.min; });
+  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
+    const a = ps[i], b = ps[j], A = R.ag[a.id], B = R.ag[b.id];
+    if (A.talk || B.talk) continue;
+    const k = a.id < b.id ? a.id + '-' + b.id : b.id + '-' + a.id;
+    if ((R.pcd[k] || 0) > S.min) continue;
+    let p;
+    const aw = A.pi < A.path.length, bw = B.pi < B.path.length;
+    if (A.inside && B.inside) { if (A.curPl !== B.curPl) continue; p = (a.h === b.h && A.curPl === M.houses[a.h]) ? .015 : .07; }
+    else if (!A.inside && !B.inside) {
+      const d = Math.hypot(A.x - B.x, A.y - B.y);
+      if (aw || bw) { if (d > 14) continue; p = .45; }          // yolda karşılaşma: en azından selamlaşırlar
+      else { if (d > 90 || (A.curPl !== B.curPl && d > 40)) continue; p = .08; }
+    } else continue;
+    if (a.kus[b.id]) p *= .3;
+    const v = relV(a, b); p *= v > 40 ? 1.5 : v < -30 ? .6 : 1;
+    if (has(a, 'neseli') || has(b, 'neseli')) p *= 1.25;
+    if (chance(p)) { const pair = chance(.5) ? [a, b] : [b, a]; if (controlled(pair[0])) pair.reverse(); startConv(pair[0], pair[1]); }
+  }
+}
+
+/* Mekân adı ve kişinin şu anki etkinliği */
+function placeName(pl, p) {
+  if (!pl) return 'Yol';
+  switch (pl.kind) {
+    case 'ev': { if (p && p.h >= 0 && M.houses[p.h] === pl) return 'Evi'; const m = hm(pl.idx); return m.length ? m[0].s + ' evi' : 'Bir ev'; }
+    case 'lot': { const b = S.biz.find(x => x.lot === pl.idx); return b ? ISLETME[b.t].ad : 'Çarşı'; }
+    case 'cami': return 'Cami'; case 'meydan': return 'Meydan'; case 'muhtarlik': return 'Muhtarlık';
+    case 'okul': return OKUL_AD[pl.key]; case 'avlu': return 'Okul bahçesi'; case 'kamu': return PROJE[pl.key].ad;
+    case 'tarla': return 'Tarla'; case 'ahir': return 'Ahır'; case 'mezar': return 'Mezarlık'; case 'cikis': return 'İlçe yolu';
+  }
+  return 'Köy';
+}
+function activity(p) {
+  if (p.dead) return '† Vefat etti'; if (p.left) return '🚌 Şehre göçtü';
+  if (p.away === 'asker') return '🎖️ Askerde'; if (p.away === 'uni') return '🎓 Şehirde okuyor'; if (p.away === 'komsu') return '🏘️ Komşu köyde';
+  const ag = R.ag[p.id];
+  if (!ag) return age(p) < 4 ? '👶 Evde' : '🏠 Evde';
+  if (ag.talk) { const o = S.people[ag.talk.a === p.id ? ag.talk.b : ag.talk.a]; return `💬 ${o ? o.n : ''} ile sohbet ediyor`; }
+  if (ag.chase) { const o = S.people[ag.chase.id]; return `🚶 ${o ? yi(o.n) : 'birini'} arıyor`; }
+  const pl = ag.curPl, hr = hourNow();
+  if (ag.pi < ag.path.length) return `🚶 Yolda — ${placeName(pl, p)} yönüne`;
+  if (ag.ring) return '💃 Halay çekiyor';
+  if (ag.inside) {
+    if (pl.kind === 'ev') { if (p.h >= 0 && M.houses[p.h] === pl) return (hr >= 22.5 || hr < 6.5) ? '😴 Uyuyor' : '🏠 Evde'; const host = hm(pl.idx)[0]; return `☕ ${host ? host.s + ' ailesinde' : 'bir evde'} misafir`; }
+    return '📍 ' + placeName(pl, p) + ' (içeride)';
+  }
+  switch (pl.kind) {
+    case 'tarla': return '🌾 Tarlada çalışıyor'; case 'ahir': return '🐑 Hayvanlarla ilgileniyor'; case 'meydan': return '🌳 Meydanda';
+    case 'lot': return '☕ ' + placeName(pl, p) + ' önünde'; case 'cami': return '🕌 Cami avlusunda'; case 'mezar': return '⚱️ Mezarlıkta';
+    case 'avlu': return '🏫 Okul bahçesinde';
+  }
+  return '📍 ' + placeName(pl, p);
+}
+
+/* Konuşma baloncukları (ekran koordinatında, her yakınlaştırmada okunur) */
+function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawBubble(x, y, text, g) {
+  ctx.font = '600 12px system-ui,-apple-system,sans-serif';
+  const maxW = Math.min(190, VW * .55), words = text.split(' '), lines = [];
+  let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; }
+  if (cur) lines.push(cur);
+  const lh = 15, w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, h = lines.length * lh + 9;
+  const bx = clamp(x - w / 2, 6, VW - w - 6), by = Math.max(4, y - h - 8);
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; rrect(bx + 2, by + 3, w, h, 9); ctx.fill();
+  ctx.fillStyle = '#fffdf7'; rrect(bx, by, w, h, 9); ctx.fill();
+  ctx.strokeStyle = g === 'E' ? '#3a6ea5' : '#b5476b'; ctx.lineWidth = 1.5; ctx.stroke();
+  const tx = clamp(x, bx + 12, bx + w - 12);
+  ctx.fillStyle = '#fffdf7'; ctx.beginPath(); ctx.moveTo(tx - 6, by + h - 1); ctx.lineTo(tx + 6, by + h - 1); ctx.lineTo(tx, by + h + 7); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(tx - 6, by + h); ctx.lineTo(tx, by + h + 7); ctx.lineTo(tx + 6, by + h); ctx.stroke();
+  ctx.fillStyle = '#2f2116'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  lines.forEach((l, i) => ctx.fillText(l, bx + 7, by + 5 + i * lh));
+}
+function drawBubbles() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const c = R.cam, stack = new Map();
+  for (const cv of R.convs) {
+    const line = cv.lines[cv.i]; if (!line) continue;
+    const sid = line[0] ? cv.b : cv.a, sp = S.people[sid], ag = R.ag[sid];
+    if (!sp || !ag) continue;
+    let wx, wy, text = line[1];
+    if (cv.inside && cv.pl) { wx = cv.pl.x + cv.pl.w / 2; wy = cv.pl.y + 4; text = sp.n + ': ' + text; }
+    else { wx = ag.x; wy = ag.y; }
+    let sx = (wx - c.x) * c.z, sy = (wy - c.y) * c.z - (cv.inside ? 0 : 6 * c.z + 16);
+    if (sx < -120 || sx > VW + 120 || sy < -20 || sy > VH + 80) continue;
+    if (cv.inside) { const n = stack.get(cv.pl) || 0; stack.set(cv.pl, n + 1); sy -= n * 42; }
+    drawBubble(sx, sy, text, sp.g);
+  }
+}
+
+/* Sohbet geçmişi paneli */
+const fmtHour = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0');
+function convHtml(cv) {
+  return `<div class="cv"><div class="cvh">${esc(cv.an.split(' ')[0])} & ${esc(cv.bn.split(' ')[0])} · ${esc(cv.pl)} · ${tarihStr(cv.d)} ${fmtHour(cv.h)}</div>` +
+    cv.l.map(([s, t]) => `<div class="ln ${s ? 'r' : ''}"><b>${esc((s ? cv.bn : cv.an).split(' ')[0])}:</b> ${esc(t)}</div>`).join('') + '</div>';
+}
+function openChat() {
+  const v = () => openSheet('💬 Sohbetler', S.chat.slice().reverse().slice(0, 40).map(convHtml).join('') || '<div class="note">Henüz kimse konuşmadı. Köylüler karşılaştıkça sohbet edecek.</div>', v);
+  v.light = true; v();
+}
+const KONU_MENU = [['hava', '🌤️ Havadan sudan'], ['is', '💼 İşini sor'], ['aile', '👪 Ailesini sor'], ['saka', '😂 Fıkra anlat'], ['cay', '☕ Çay ısmarla'],
+  ['davet', '🍲 Akşam yemeğe davet et'], ['futbol', '⚽ Maç muhabbeti'], ['flort', '💕 İltifat et'], ['itiraf', '❤️ Aşkını itiraf et'], ['dedikodu', '🗣️ Dedikodu yap'],
+  ['yardim', '💸 Borç iste'], ['oy', '🗳️ Oy iste'], ['baris', '🕊️ Barış teklif et'], ['lafsok', '😠 Laf sok'], ['kavga', '👊 Kavga çıkar']];
 
 /* ======================= 11) ÇİZİM ======================= */
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -2040,6 +2581,9 @@ function drawStatic() {
     label(g, o ? o.n : T.ad, l.bld.x + l.bld.w / 2, l.bld.y + l.bld.h / 2 + 12, 8);
     if (b.t === 'kahvehane') { g.fillStyle = '#7a5230'; for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(l.yard.x + 10 + i * 18, l.yard.y + 9, 4, 0, 7); g.fill(); } }
   }
+  // İlçe yolu
+  g.fillStyle = asf ? '#6d6d6d' : P0.road; g.fillRect(0, HY[2] - 9, VX[0], 18);
+  emoji(g, '🚌', 14, HY[2] - 20, 14); label(g, 'İlçe yolu', 30, HY[2] + 18, 8);
   // Çeşmeler
   for (let i = 0; i < (S.proj.cesme.n || 0); i++) {
     const s = M.cesmeSpots[i * 3 % M.cesmeSpots.length]; g.fillStyle = '#b8b0a0'; g.fillRect(s.x - 8, s.y - 6, 16, 12); g.fillStyle = se === 0 ? '#dfeef7' : '#5fb2d9'; g.fillRect(s.x - 5, s.y - 3, 10, 6);
@@ -2121,10 +2665,8 @@ function render(dtReal) {
     ctx.fillStyle = col.body; ctx.beginPath(); ctx.arc(x, y - bob, r, 0, 7); ctx.fill();
     ctx.fillStyle = col.scarf || (a >= 60 ? '#d9d9d9' : col.skin); ctx.beginPath(); ctx.arc(x, y - bob - r * .55, r * .62, 0, 7); ctx.fill();
     if (!col.scarf && a < 60) { ctx.fillStyle = '#3a2a1b'; ctx.beginPath(); ctx.arc(x, y - bob - r * .75, r * .5, Math.PI, 0); ctx.fill(); }
-    if (+id === sel || +id === ctl) {
-      ctx.strokeStyle = +id === ctl ? '#7b4fd6' : '#e9a23b'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x, y - bob, r + 3.5, 0, 7); ctx.stroke();
-      label(ctx, p.n, x, y - r - 11, 9, '#2f2116');
-    }
+    if (+id === sel || +id === ctl) { ctx.strokeStyle = +id === ctl ? '#7b4fd6' : '#e9a23b'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(x, y - bob, r + 3.5, 0, 7); ctx.stroke(); }
+    if (c.z >= .7 || +id === sel || +id === ctl) label(ctx, p.n, x, y - r - 7 / c.z, 10 / c.z, +id === ctl ? '#5a2fb0' : '#2f2116');
   }
   // Gece karanlığı
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -2140,15 +2682,25 @@ function render(dtReal) {
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     }
   }
-  // Kar yağışı
-  if (se === 0) {
+  // Hava durumu
+  const hv = S.hava;
+  if (hv === 'karli') {
     if (!R.snow) R.snow = Array.from({length: 90}, () => ({x: Math.random(), y: Math.random(), s: rnd(.3, 1)}));
     ctx.fillStyle = 'rgba(255,255,255,.85)';
-    for (const f of R.snow) { f.y += dtReal * .06 * f.s * (1 + (S.speed > 0 ? .5 : 0)); f.x += Math.sin(f.y * 20 + f.s * 10) * .0007; if (f.y > 1) { f.y = 0; f.x = Math.random(); } ctx.beginPath(); ctx.arc(f.x * VW, f.y * VH, 1.2 + f.s * 1.4, 0, 7); ctx.fill(); }
-  } else if (se === 3 && R.leaves !== false) {
+    for (const f of R.snow) { f.y += dtReal * .06 * f.s; f.x += Math.sin(f.y * 20 + f.s * 10) * .0007; if (f.y > 1) { f.y = 0; f.x = Math.random(); } ctx.beginPath(); ctx.arc(f.x * VW, f.y * VH, 1.2 + f.s * 1.4, 0, 7); ctx.fill(); }
+  } else if (hv === 'yagmurlu') {
+    if (!R.rain) R.rain = Array.from({length: 110}, () => ({x: Math.random(), y: Math.random(), s: rnd(.6, 1)}));
+    ctx.fillStyle = 'rgba(40,52,75,.16)'; ctx.fillRect(0, 0, VW, VH);
+    ctx.strokeStyle = 'rgba(190,210,235,.55)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (const f of R.rain) { f.y += dtReal * 1.4 * f.s; if (f.y > 1) { f.y = 0; f.x = Math.random(); } const x = f.x * VW, y = f.y * VH; ctx.moveTo(x, y); ctx.lineTo(x - 2, y + 11); }
+    ctx.stroke();
+  } else if (se === 3) {
     if (!R.leaf) R.leaf = Array.from({length: 18}, () => ({x: Math.random(), y: Math.random(), s: rnd(.3, 1)}));
     for (const f of R.leaf) { f.y += dtReal * .04 * f.s; f.x += Math.sin(f.y * 12 + f.s * 7) * .002; if (f.y > 1) { f.y = 0; f.x = Math.random(); } ctx.fillStyle = f.s > .6 ? '#d9822b' : '#c0532a'; ctx.beginPath(); ctx.ellipse(f.x * VW, f.y * VH, 3, 1.6, f.y * 10, 0, 7); ctx.fill(); }
   }
+  if (hv === 'sisli') { ctx.fillStyle = 'rgba(228,231,236,.4)'; ctx.fillRect(0, 0, VW, VH); }
+  else if (hv === 'bulutlu') { ctx.fillStyle = 'rgba(50,60,80,.08)'; ctx.fillRect(0, 0, VW, VH); }
+  drawBubbles();
 }
 function updateAnimals(gm) {
   if (gm <= 0) return;
@@ -2279,6 +2831,7 @@ function openProfile(id, fresh) {
       <div><b style="font-size:17px">${esc(fn(p))}</b>${p.ms && p.ms !== p.s ? ` <small>(kızlık: ${esc(p.ms)})</small>` : ''}<br>
       <small>${a} yaşında · ${p.g === 'E' ? 'Erkek' : 'Kadın'} · ${marriedStatus(p)}${S.muhtar === p.id ? ' · 🏛️ <b>Muhtar</b>' : ''}${p.dead ? ' · † Vefat' : p.left ? ' · Şehre göçtü' : ''}</small></div></div>`;
     h += `<div style="margin-top:6px">${p.tr.map(t => `<span class="chip">${KISILIK[t]}</span>`).join('')}</div>`;
+    h += `<div class="kv"><span>Şu an</span><span>${activity(p)}</span></div>`;
     h += `<div class="kv"><span>Hayat hedefi</span><span>${HEDEF[p.goal]} ${gp >= 1 ? '✅' : `(%${Math.round(gp * 100)})`}</span></div>`;
     h += `<div class="kv"><span>Meslek</span><span>${jobText(p)}</span></div>`;
     h += `<div class="kv"><span>Eğitim</span><span>${EGITIM[p.edu]}</span></div>`;
@@ -2304,6 +2857,9 @@ function openProfile(id, fresh) {
     }
     if (!best.length && !worst.length) h += '<div class="note">Henüz güçlü bir ilişkisi yok.</div>';
     h += `</div>`;
+    const convs = S.chat.filter(cv => cv.a === p.id || cv.b === p.id).slice(-3).reverse();
+    if (convs.length) h += `<div class="sec">Son sohbetleri</div>` + convs.map(convHtml).join('');
+    if (p.mem && p.mem.length) h += `<div class="sec">Aklında kalanlar</div>` + p.mem.slice().reverse().map(m => `<div class="kv"><span>${tarihStr(m.d)}</span><span>${esc(m.t)}</span></div>`).join('');
     const clans = Object.keys(S.clan).filter(k => k.split('|').includes(p.s) && Math.abs(S.clan[k]) >= 30).sort((a, b) => S.clan[a] - S.clan[b]).slice(0, 5);
     if (clans.length) h += `<div class="sec">${esc(p.s)} ailesinin ilişkileri</div>` + clans.map(k => { const o = k.split('|').find(x => x !== p.s) || p.s; const v2 = S.clan[k]; return `<span class="chip">${v2 < 0 ? '⚔️' : '🤝'} ${esc(o)} (${v2 > 0 ? '+' : ''}${Math.round(v2)})</span>`; }).join('');
     // Düğmeler
@@ -2324,10 +2880,12 @@ function openProfile(id, fresh) {
         <button class="btn s" data-act="g_rep" data-id="${p.id}" data-v="-20">👎 İtibar -20</button>
         <button class="btn" data-act="g_wed" data-id="${p.id}">💒 Biriyle evlendir</button>
         <button class="btn r" data-act="g_fight" data-id="${p.id}">👊 Biriyle kavga ettir</button>
+        <button class="btn" data-act="g_talk" data-id="${p.id}">💬 Biriyle konuştur</button>
       </div>`;
     }
     openSheet(fn(p), h, v, !fresh && true);
   };
+  v.light = true;
   if (fresh) { R.sheetStack = []; R.curView = null; }
   v();
 }
@@ -2483,16 +3041,13 @@ function openActions() {
     const a = age(p), single = p.sp == null;
     const isMuhtar = S.muhtar === p.id;
     let h = `<div class="note">${esc(fn(p))} · ${a} yaş · ${para(p.money)}${p.debt ? ' · borç ' + para(p.debt) : ''} · ${jobText(p)}</div><div class="grid2">`;
+    h += `<button class="btn v" data-act="a_konus">💬 Biriyle konuş</button>`;
+    h += `<button class="btn" data-act="a_git">📍 Bir yere git</button>`;
     h += `<button class="btn" data-act="a_biz">🏪 İş kur</button>`;
     h += `<button class="btn" data-act="a_job">💼 İş değiştir</button>`;
     if (p.g === 'E' && single && a >= 18) h += `<button class="btn" data-act="a_iste">💍 Kız iste</button>`;
-    if (single && a >= 16) h += `<button class="btn" data-act="a_flirt">💕 Gönül ver</button>`;
-    h += `<button class="btn" data-act="a_talk">🤝 Sohbet et</button>`;
     h += `<button class="btn" data-act="a_gift">🎁 Hediye ver</button>`;
-    h += `<button class="btn" data-act="a_baris">🕊️ Barış</button>`;
-    h += `<button class="btn r" data-act="a_fight">👊 Kavga et</button>`;
-    h += `<button class="btn s" data-act="a_gossip">🗣️ Dedikodu yap</button>`;
-    if (a >= 25) h += `<button class="btn" data-act="a_cand">🗳️ Muhtarlığa aday ol</button>`;
+    if (a >= 23) h += `<button class="btn" data-act="a_cand">🗳️ Muhtarlığa aday ol</button>`;
     if (isMuhtar) h += `<button class="btn v" data-act="a_invest">🏛️ Köye yatırım yap</button>`;
     h += `<button class="btn s" data-act="a_loan">🏦 20 bin ₺ borç al</button>`;
     if (p.debt > 0) h += `<button class="btn s" data-act="a_repay">💳 Borç öde</button>`;
@@ -2522,6 +3077,40 @@ const ACT = {
     openSheet('🏪 İş kur', h + '</div>', null, true);
   },
   a_biz2: d => { const p = P(S.ctrl); if (p.job && p.job.t === 'sahip' && !confirm('Mevcut işletmeni kapatıp yenisini açmak istiyor musun?')) return; const b = createBiz(p, d.t); closeSheet(); toast(b ? 'İşletmen açıldı! Hayırlı olsun.' : 'Boş dükkân yeri yok.'); },
+  a_konus: () => {
+    const p = P(S.ctrl);
+    choosePerson('💬 Kiminle konuşacaksın?', q => q !== p && R.ag[q.id], q => {
+      const ok = k => k === 'flort' || k === 'itiraf' ? canRomance(p, q) : k === 'futbol' ? p.g === 'E' && q.g === 'E'
+        : k === 'oy' ? !!(S.secim && S.secim.cands.includes(p.id)) : k === 'baris' ? !!p.kus[q.id] || relV(p, q) < -10 : k === 'davet' ? p.h >= 0 && p.h !== q.h : true;
+      const h = `<div class="note">${esc(fn(p))}, ${yi(q.n)} bulup yanına gidecek ve konuşacak. Ne konuşsun?</div><div class="list">` +
+        KONU_MENU.filter(([k]) => ok(k)).map(([k, t]) => `<div class="it" data-act="a_konus2" data-t="${k}" data-id="${q.id}"><span class="nm">${t}</span></div>`).join('') + '</div>';
+      openSheet('💬 ' + q.n + ' ile ne konuşalım?', h, null, true);
+    }, 'Kişiye dokun, sonra konuyu seç. Karakterin onu bulup yanına gider.');
+  },
+  a_konus2: d => {
+    const p = P(S.ctrl), q = P(+d.id), ag = agentOf(p);
+    ag.chase = {id: q.id, topic: d.t, until: S.min + 240, next: 0}; ag.override = 0;
+    R.follow = p.id; closeSheet(); toast(`${q.n} aranıyor… Yanına varınca konuşacaklar.`);
+  },
+  a_git: () => {
+    const p = P(S.ctrl);
+    const kh = S.biz.find(b => b.t === 'kahvehane'), bk = S.biz.find(b => ISLETME[b.t].cat === 'gida');
+    const opts = [['ev', '🏠 Eve git', homeDest(p)], ['meydan', '🌳 Meydana git', dOut(M.meydan)], ['cami', '🕌 Camiye git', dIn(M.cami)]];
+    if (kh) opts.push(['kahve', '☕ Kahvehaneye git', dOut(M.lots[kh.lot], M.lots[kh.lot].yard)]);
+    if (bk) opts.push(['bakkal', '🛒 ' + ISLETME[bk.t].ad + 'a git', dIn(M.lots[bk.lot])]);
+    opts.push(['tarla', '🌾 Tarlaya git', dOut(M.tarla[0])], ['ahir', '🐑 Ahıra git', dOut(M.ahir[0], M.ahir[0].mera)], ['mezar', '⚱️ Mezarlığa git', dOut(M.mezar, M.mezar.yard)]);
+    R.gitOpts = opts;
+    openSheet('📍 Nereye gidelim?', '<div class="note">Karakterin 3 oyun saati orada kalır, sonra kendi programına döner.</div><div class="list">' + opts.map(([k, t], i) => `<div class="it" data-act="a_git2" data-i="${i}"><span class="nm">${t}</span></div>`).join('') + '</div>', null, true);
+  },
+  a_git2: d => {
+    const p = P(S.ctrl), ag = agentOf(p), o = R.gitOpts[+d.i];
+    ag.chase = null; if (ag.talk) endConv(ag.talk, false);
+    goTo(ag, o[2]); ag.override = S.min + 180; R.follow = p.id; closeSheet(); toast(o[1].slice(2) + '...');
+  },
+  g_talk: d => {
+    const p = P(+d.id);
+    choosePerson('💬 Kiminle konuşsun?', q => q !== p && R.ag[q.id], q => { const ag = R.ag[p.id]; if (!ag) { toast('Şu an evde değil.'); return; } ag.chase = {id: q.id, topic: null, until: S.min + 240, next: 0}; toast(`${p.n}, ${yi(q.n)} bulmaya gidiyor.`); });
+  },
   a_job: () => {
     const p = P(S.ctrl);
     const opts = [['ciftci', '🌾 Çiftçilik yap'], ['hayvanci', '🐄 Hayvancılık yap'], ['issiz', '🛋️ İşi bırak'], ['ev', '🏠 Ev işleriyle ilgilen']];
@@ -2633,7 +3222,7 @@ function openMenu() {
     <button class="btn" id="mSave">💾 Şimdi kaydet</button>
     <button class="btn s" id="mHelp">❓ Nasıl oynanır?</button>
     <button class="btn r" id="mNew">🔄 Yeni oyun başlat</button></div>
-    <div class="note">Oyun her oyun ayında otomatik kaydedilir (5 gerçek dakika, 1x hızda).</div>`;
+    <div class="note">Oyun her 30 saniyede bir ve sayfadan çıkarken otomatik kaydedilir.</div>`;
   openSheet('☰ Menü', h, openMenu);
   $('mSave').onclick = () => { save(); toast('Kaydedildi.'); };
   $('mHelp').onclick = showHelp;
@@ -2646,7 +3235,8 @@ function showHelp() {
   • <b>🎮 Bu karakteri yönet</b> dersen onun kararlarını sen verirsin (iş kur, kız iste, kavga, barış, aday ol…).<br>
   • <b>⚡ Tanrı modu</b> ile kuraklık, düğün, kavga gibi olayları tetikle.<br>
   • 📊 İstatistikler: en zenginler, en saygınlar, nüfus grafiği, muhtarlık geçmişi.<br>
-  • 1x hızda 5 dakika = 1 oyun ayı. Oyun her ay kendini kaydeder.`, [{t: 'Başlayalım!'}]);
+  • Köylüler karşılaşınca sohbet eder; baloncuklarda ne konuştuklarını görürsün. 💬 düğmesi tüm sohbetleri gösterir.<br>
+  • 1x hızda 1 dakika = 1 oyun saati. Oyun kendini sık sık kaydeder.`, [{t: 'Başlayalım!'}]);
 }
 
 /* Üst çubuk ve mod etiketi */
@@ -2661,7 +3251,8 @@ let lastTop = '';
 function updateTop() {
   const hr = hourNow(), h = Math.floor(hr), m = Math.floor((hr - h) * 60 / 10) * 10;
   const bay = bayramToday(curDay());
-  const s = [tarihStr(), MEVSIM_IKON[MEVSIM(moy())] + ' ' + (bay ? '🎉 Bayram' : MEVSIM_AD[MEVSIM(moy())]), (hr >= 6 && hr < 19 ? '☀️' : '🌙') + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0'), '👥' + alive().length, '🏦' + para(S.treasury).replace(' ₺', '')].join('|');
+  const hv = HAVA[S.hava] || HAVA.gunesli;
+  const s = [tarihStr(), MEVSIM_IKON[MEVSIM(moy())] + ' ' + (bay ? '🎉 Bayram' : MEVSIM_AD[MEVSIM(moy())]), (hr >= 6 && hr < 19 ? hv[0] : '🌙') + String(h).padStart(2, '0') + ':' + String(Math.floor((hr - h) * 60)).padStart(2, '0'), '👥' + alive().length, '🏦' + para(S.treasury).replace(' ₺', '')].join('|');
   if (s === lastTop) return; lastTop = s;
   const [a, b, c, d, e] = s.split('|');
   $('tDate').textContent = a; $('tSeason').textContent = b; $('tTime').textContent = c; $('tPop').textContent = d; $('tTre').textContent = e;
@@ -2669,7 +3260,7 @@ function updateTop() {
 function updateSpeeds() { for (const b of document.querySelectorAll('#speeds button')) b.classList.toggle('on', +b.dataset.s === S.speed); }
 for (const b of document.querySelectorAll('#speeds button')) b.onclick = () => { S.speed = +b.dataset.s; updateSpeeds(); };
 $('bStats').onclick = () => openStats();
-$('bNews').onclick = openNews;
+$('bChat').onclick = openChat;
 $('bGod').onclick = openGod;
 $('bMenu').onclick = openMenu;
 $('fab').onclick = openActions;
@@ -2693,7 +3284,7 @@ function save() {
   catch (e) { prunePeople(); S.news = S.news.slice(-80); try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e2) { console.warn('Kayıt başarısız', e2); } }
 }
 function load() {
-  try { const t = localStorage.getItem(SAVE_KEY); if (!t) return false; const d = JSON.parse(t); if (!d || d.v !== 1) return false; S = d; return true; }
+  try { const t = localStorage.getItem(SAVE_KEY); if (!t) return false; const d = JSON.parse(t); if (!d || d.v !== 2) return false; S = d; return true; }
   catch (e) { console.warn('Kayıt okunamadı', e); return false; }
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden && S) save(); });
@@ -2720,13 +3311,14 @@ function startNew() {
   setTimeout(showHelp, 400);
 }
 function afterLoad() {
-  dirty(); R.ag = {}; R.mapDirty = true;
+  dirty(); R.ag = {}; R.mapDirty = true; R.convs = []; R.cd = {}; R.pcd = {}; R.convId = 0;
+  if (!S.chat) S.chat = []; if (!S.hava) S.hava = 'gunesli';
   // Yarım kalan günün programını yeniden kur
   buildSchedules(bayramToday(curDay()));
   updateAgents(0);
   for (const id in R.ag) { const ag = R.ag[id]; if (ag.pi < ag.path.length) { const last = ag.path[ag.path.length - 1]; ag.x = last.x; ag.y = last.y; ag.pi = ag.path.length; if (ag.dest && !ag.dest.out) ag.inside = true; } }
   updateModeChip(); updateSpeeds(); R.tk.w = 0;
-  R.cam.z = clamp(VW / 520, minZoom(), 4); centerOn(M.meydan.cx, M.meydan.cy + 60);
+  R.cam.z = clamp(VW / 300, minZoom(), 4); centerOn(M.meydan.cx, M.meydan.cy + 40);
 }
 
 let lastT = performance.now(), topT = 0, sheetT = 0;
@@ -2736,7 +3328,8 @@ function frame(now) {
   const gm = dt * GAME_MIN_PER_SEC * sp;
   try {
     if (gm > 0) advance(gm);
-    updateAgents(gm); updateAnimals(gm);
+    updateAgents(gm); updateConvs(gm); updateAnimals(gm);
+    R.encT = (R.encT || 0) + gm; while (R.encT >= 1) { R.encT -= 1; checkEncounters(); }
     if (R.follow != null) { const ag = R.ag[R.follow]; if (ag) { const tx = ag.x - VW / 2 / R.cam.z, ty = ag.y - VH / 2 / R.cam.z; R.cam.x += (tx - R.cam.x) * .12; R.cam.y += (ty - R.cam.y) * .12; clampCam(); } }
     render(dt);
     topT -= dt; if (topT <= 0) { topT = .25; updateTop(); }
@@ -2754,9 +3347,10 @@ window.addEventListener('resize', resize);
 if (load()) { afterLoad(); toast('Kaldığın yerden devam ediliyor: ' + tarihStr()); }
 else startNew();
 requestAnimationFrame(frame);
+setInterval(() => { if (S) save(); }, 30000);
 
 /* Hata ayıklama / test için */
-window.KOY = {get S() { return S; }, R, advance, ff: days => { for (let i = 0; i < days; i++) advance(DAY_MIN); }, alive};
+window.KOY = {get S() { return S; }, R, advance, ff: days => { for (let i = 0; i < days; i++) advance(DAY_MIN); }, alive, startConv, P};
 </script>
 </body>
 </html>
